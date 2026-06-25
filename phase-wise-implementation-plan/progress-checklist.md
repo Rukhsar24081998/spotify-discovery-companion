@@ -2,7 +2,7 @@
 
 Live tracker for the Spotify Discovery Companion build. Tick each phase only when its **Definition of Done** (in the phase document) is fully met and the phase has passed review.
 
-**Overall completion: 8% (1 / 13 phases complete)**
+**Overall completion: 15% (2 / 13 phases complete)**
 
 > Update rule: each completed phase = ~7.7%. Recompute `completed / 13` after every merge.
 
@@ -11,7 +11,7 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 ## Phases
 
 - [x] **01 — Project Setup** — Deployable Next.js 15 + TS + Tailwind skeleton
-- [ ] **02 — Shared Architecture** — `types/`, `lib/` service skeletons, utilities
+- [x] **02 — Shared Architecture** — `types/`, `lib/` service skeletons, utilities
 - [ ] **03 — Design System** — Theme tokens, primitives, Spotify Home + Discovery card
 - [ ] **04 — Discovery Flow UI** — Input screen + LoadingState (mocked)
 - [ ] **05 — Spotify API** — Token cache, Search, `/api/spotify/search`
@@ -36,10 +36,10 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 - [x] `.env.example` + git-ignored `.env.local`
 
 ### 02 — Shared Architecture
-- [ ] `types/` contracts (Recommendation, route I/O, error envelope, enums)
-- [ ] `lib/utils.ts` validation + sanitization + score helpers
-- [ ] `lib/` service signatures stubbed
-- [ ] Unit tests for validators pass
+- [x] `types/` contracts (Recommendation, route I/O, error envelope, enums)
+- [x] `lib/utils.ts` validation + sanitization + score helpers
+- [x] `lib/` service signatures stubbed
+- [ ] Unit tests for validators pass — deferred this phase (verified via `npm run build` + `npm run lint`; no test framework per instruction)
 
 ### 03 — Design System
 - [ ] Theme tokens (near-black bg, dark-gray cards, Spotify green accent)
