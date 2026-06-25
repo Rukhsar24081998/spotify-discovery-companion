@@ -2,7 +2,7 @@
 
 Live tracker for the Spotify Discovery Companion build. Tick each phase only when its **Definition of Done** (in the phase document) is fully met and the phase has passed review.
 
-**Overall completion: 46% (6 / 13 phases complete)**
+**Overall completion: 54% (7 / 13 phases complete)**
 
 > Update rule: each completed phase = ~7.7%. Recompute `completed / 13` after every merge.
 
@@ -16,7 +16,7 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 - [x] **04 — Discovery Flow UI** — Input screen + LoadingState (mocked)
 - [x] **05 — Spotify API** — Token cache, Search, `/api/spotify/search`
 - [x] **06 — Groq Planning** — Groq Call 1 (intent → strategy → query)
-- [ ] **07 — Backend Orchestration** — `/api/discover` with ranking stub
+- [x] **07 — Backend Orchestration** — `/api/discover` with ranking stub
 - [ ] **08 — AI Recommendation Engine** — Groq Call 2: ranking + Discovery Match + explanations
 - [ ] **09 — Recommendation Cards** — Results screen + actions, wired to `/api/discover`
 - [ ] **10 — Preview Player** — Inline 30-sec preview + unavailable degradation
@@ -69,11 +69,12 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 - [x] Returns valid `{ intent, strategy, searchQuery }` (5/5 verified)
 
 ### 07 — Backend Orchestration
-- [ ] `/api/discover` input validation
-- [ ] Planning → search → candidate pool assembly
-- [ ] Ranking stub returns testable results
-- [ ] Response shape + error envelope correct
-- [ ] Draft `ARCHITECTURE.md` (as-built + decisions, links to `/docs`)
+- [x] `/api/discover` input validation
+- [x] Planning (once) → search → candidate pool assembly (deduped)
+- [x] Ranking stub returns ordered `CandidateTrack[]` (no scores/explanations)
+- [x] Deterministic broadened-search fallback when < min candidates
+- [x] Response shape + error envelope correct; dev timing logs
+- [x] Draft `ARCHITECTURE.md` (as-built + decisions, links to `/docs`)
 
 ### 08 — AI Recommendation Engine
 - [ ] Groq Call 2 ranking + explanations
