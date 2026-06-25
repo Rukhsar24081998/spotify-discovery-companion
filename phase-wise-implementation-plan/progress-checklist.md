@@ -2,7 +2,7 @@
 
 Live tracker for the Spotify Discovery Companion build. Tick each phase only when its **Definition of Done** (in the phase document) is fully met and the phase has passed review.
 
-**Overall completion: 23% (3 / 13 phases complete)**
+**Overall completion: 31% (4 / 13 phases complete)**
 
 > Update rule: each completed phase = ~7.7%. Recompute `completed / 13` after every merge.
 
@@ -13,7 +13,7 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 - [x] **01 — Project Setup** — Deployable Next.js 15 + TS + Tailwind skeleton
 - [x] **02 — Shared Architecture** — `types/`, `lib/` service skeletons, utilities
 - [x] **03 — Design System** — Theme tokens, primitives, Spotify Home + Discovery card
-- [ ] **04 — Discovery Flow UI** — Input screen + LoadingState (mocked)
+- [x] **04 — Discovery Flow UI** — Input screen + LoadingState (mocked)
 - [ ] **05 — Spotify API** — Token cache, Search, `/api/spotify/search`
 - [ ] **06 — Groq Planning** — Groq Call 1 (intent → strategy → query)
 - [ ] **07 — Backend Orchestration** — `/api/discover` with ranking stub
@@ -49,11 +49,11 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 - [x] Responsive + accessible
 
 ### 04 — Discovery Flow UI
-- [ ] MoodSelector (single-select, canonical order)
-- [ ] ActivitySelector (single-select, canonical order)
-- [ ] ArtistSearch (max 3, debounced, mocked suggestions)
-- [ ] LoadingState reasoning screen
-- [ ] CTA gating + flow state container
+- [x] MoodSelector (single-select, canonical order)
+- [x] ActivitySelector (single-select, canonical order)
+- [x] ArtistSearch (max 3, debounced, mocked suggestions)
+- [x] LoadingState reasoning screen
+- [x] CTA gating + flow state container
 
 ### 05 — Spotify API
 - [ ] Token fetch + in-memory cache w/ margin
