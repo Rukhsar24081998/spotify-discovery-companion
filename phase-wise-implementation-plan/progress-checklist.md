@@ -2,7 +2,7 @@
 
 Live tracker for the Spotify Discovery Companion build. Tick each phase only when its **Definition of Done** (in the phase document) is fully met and the phase has passed review.
 
-**Overall completion: 38% (5 / 13 phases complete)**
+**Overall completion: 46% (6 / 13 phases complete)**
 
 > Update rule: each completed phase = ~7.7%. Recompute `completed / 13` after every merge.
 
@@ -15,7 +15,7 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 - [x] **03 — Design System** — Theme tokens, primitives, Spotify Home + Discovery card
 - [x] **04 — Discovery Flow UI** — Input screen + LoadingState (mocked)
 - [x] **05 — Spotify API** — Token cache, Search, `/api/spotify/search`
-- [ ] **06 — Groq Planning** — Groq Call 1 (intent → strategy → query)
+- [x] **06 — Groq Planning** — Groq Call 1 (intent → strategy → query)
 - [ ] **07 — Backend Orchestration** — `/api/discover` with ranking stub
 - [ ] **08 — AI Recommendation Engine** — Groq Call 2: ranking + Discovery Match + explanations
 - [ ] **09 — Recommendation Cards** — Results screen + actions, wired to `/api/discover`
@@ -63,10 +63,10 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 - [x] 429 / empty / auth-fail handled
 
 ### 06 — Groq Planning
-- [ ] `lib/groq.ts` planning call (model + temp + JSON mode)
-- [ ] `lib/prompts.ts` planning prompt
-- [ ] Schema validation + retry-once
-- [ ] Returns valid `{ intent, strategy, searchQuery }`
+- [x] `lib/groq.ts` planning call (model + temp + JSON mode)
+- [x] `lib/prompts.ts` planning prompt (`buildPlanningPromptV1`)
+- [x] Schema validation + retry-once (+ fallback model)
+- [x] Returns valid `{ intent, strategy, searchQuery }` (5/5 verified)
 
 ### 07 — Backend Orchestration
 - [ ] `/api/discover` input validation

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "measure:preview": "node scripts/measure-preview.ts"
+    "measure:preview": "node scripts/measure-preview.ts",
+    "measure:plan": "node scripts/measure-plan.ts"
   },
   "dependencies": {
     "lucide-react": "^1.21.0",
