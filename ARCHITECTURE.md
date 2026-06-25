@@ -36,35 +36,44 @@ never reach the browser (`docs/cursor-rules.md` → Architecture, `docs/tech-sta
 | `types/index.ts` | Single source of truth for shared contracts (Recommendation, route I/O, error envelope, `Mood`/`Activity`). |
 | `lib/utils.ts` | Validation, sanitization, score clamp/round, error-envelope builders. |
 | `lib/spotify.ts` | Client-Credentials auth + in-memory token cache, track/artist search, mapping to `CandidateTrack`/`ArtistSuggestion`. `SpotifyError`. |
-| `lib/groq.ts` | Groq Call 1 (`generatePlan`); Call 2 ranking arrives in Phase 08. `GroqError`. |
-| `lib/prompts.ts` | Versioned prompt builders (`buildPlanningPromptV1`), separate from logic. |
-| `lib/ranking.ts` | **Temporary** deterministic ranking stub (Phase 07); replaced by AI ranking in Phase 08. |
+| `lib/groq.ts` | Groq Call 1 (`generatePlan`) and Call 2 (`rankCandidates`). `GroqError`. |
+| `lib/prompts.ts` | Versioned prompt builders (`buildPlanningPromptV1`, `buildRankingPromptV1`). |
+| `lib/ranking.ts` | Server-side post-processing: `trackId` reconciliation, variety enforcement, `Recommendation` composition. |
 | `lib/log.ts` | Dev-only logging (silent in production). |
 
-## Request pipeline — `POST /api/discover` (Phase 07)
+## Request pipeline — `POST /api/discover`
 
 ```
 Discovery Request
   → validate input            (lib/utils.validateDiscoverInput)
-  → planning (Groq Call 1)    (lib/groq.generatePlan)   — once per request
+  → planning (Groq Call 1)    (lib/groq.generatePlan)   — once per request, internal only
   → Spotify candidate search  (lib/spotify.searchTracks)
-  → broadened search if <3    (deterministic, no extra Groq call)
+  → pre-search broadened search if pool < min
   → candidate pool (deduped by trackId)
-  → ranking stub (ordered CandidateTrack[])  (lib/ranking.rankCandidatesStub)
-  → response { rankedCandidates, candidatePool, meta }
+  → ranking (Groq Call 2)       (lib/groq.rankCandidates)
+  → reconcile trackIds          (lib/ranking.reconcileRanking)
+  → compose Recommendations     (lib/ranking.composeRecommendations)
+  → post-ranking broadened search + re-rank if still < min
+  → response { recommendations, candidatePool, meta }
 ```
 
-- Planning runs **exactly once** per request; `intent`/`strategy` are carried for Phase 08 ranking.
-- The stub orders by popularity and enforces the one-per-artist variety rule. It
-  produces **no** Discovery Scores or explanations — those are AI concepts that
-  first appear in Phase 08, which returns the final `DiscoverResponse`
-  (`Recommendation[]`).
+- **PlanningResult** (`intent`, `strategy`, `searchQuery`) is generated once and
+  kept server-internal; it is passed to Call 2 but never exposed in the API response.
+- **Discovery Match** (`discoveryScore`) is an integer 0–100 returned by Groq Call 2,
+  clamped/rounded server-side. The ranking prompt optimizes for product principles
+  (mood/activity fit, familiarity/discovery balance, set diversity) rather than
+  rigid numeric weight formulas.
+- **Popularity** is omitted from the ranking prompt when zero/unavailable; it is
+  not used as a primary ranking signal until Spotify mapping is confirmed reliable.
+- **Explanations** are ≤3 sentences, context-aware, and validated before use.
+- **Variety** is enforced at set level: the AI curates a cohesive set; the backend
+  defensively discards unknown `trackId`s and enforces one track per primary artist.
 
 ## Two-call Groq flow
 
-1. **Call 1 — Planning** (Phase 06, live): `{ mood, activity, favoriteArtists }` → `{ intent, strategy, searchQuery }`.
+1. **Call 1 — Planning:** `{ mood, activity, favoriteArtists }` → `{ intent, strategy, searchQuery }`.
 2. **Spotify Search** runs between the two Groq calls.
-3. **Call 2 — Ranking** (Phase 08): scores + explanations over the candidate pool. Currently a deterministic stub.
+3. **Call 2 — Ranking:** scores + explanations over the candidate pool using context + intent + strategy.
 
 See [`docs/ai-workflow.md`](docs/ai-workflow.md) → Complete AI Pipeline.
 

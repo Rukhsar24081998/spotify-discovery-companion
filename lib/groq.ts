@@ -10,18 +10,24 @@ import type {
   DiscoveryContext,
   ErrorCode,
   PlanningResult,
+  RankedTrack,
   RankingInput,
   RankingResult,
   RerankInput,
 } from '@/types';
-import { buildPlanningPromptV1, type ChatPrompt } from '@/lib/prompts';
+import { buildPlanningPromptV1, buildRankingPromptV1, type ChatPrompt } from '@/lib/prompts';
+import { normalizeExplanation } from '@/lib/ranking';
+import { clampScore } from '@/lib/utils';
 import { devLog } from '@/lib/log';
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const PLANNING_MODEL = 'llama-3.3-70b-versatile';
 const PLANNING_FALLBACK_MODEL = 'llama-3.1-8b-instant';
-const PLANNING_TEMPERATURE = 0.3;
+const RANKING_MODEL = 'llama-3.3-70b-versatile';
+const TEMPERATURE = 0.3;
 const PLANNING_MAX_TOKENS = 1024;
+const RANKING_MAX_TOKENS = 1536;
+const MAX_EXPLANATION_SENTENCES = 3;
 
 /** Error carrying a shared ErrorCode so API routes can map it to the envelope. */
 export class GroqError extends Error {
@@ -47,7 +53,11 @@ function isStringArray(value: unknown): value is string[] {
 }
 
 /** Call Groq chat completions in JSON mode and return the raw message content. */
-async function callGroqJson(model: string, prompt: ChatPrompt): Promise<string> {
+async function callGroqJson(
+  model: string,
+  prompt: ChatPrompt,
+  maxTokens: number,
+): Promise<string> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     throw new GroqError('GROQ_UNAVAILABLE', 'Groq API key is not configured.');
@@ -61,8 +71,8 @@ async function callGroqJson(model: string, prompt: ChatPrompt): Promise<string> 
     },
     body: JSON.stringify({
       model,
-      temperature: PLANNING_TEMPERATURE,
-      max_tokens: PLANNING_MAX_TOKENS,
+      temperature: TEMPERATURE,
+      max_tokens: maxTokens,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: prompt.system },
@@ -146,6 +156,77 @@ function parsePlanningResult(content: string): PlanningResult | null {
   };
 }
 
+function parseScore(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return clampScore(value);
+  }
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return clampScore(parsed);
+    }
+  }
+  return null;
+}
+
+/**
+ * Parse a single ranked item. Returns null only for structural failures
+ * (missing trackId, score, or explanation). Formatting issues are normalized.
+ */
+function parseRankedTrack(value: unknown): RankedTrack | null {
+  if (!isObject(value)) {
+    return null;
+  }
+  if (typeof value.trackId !== 'string' || value.trackId.trim() === '') {
+    return null;
+  }
+  if (typeof value.explanation !== 'string' || value.explanation.trim() === '') {
+    return null;
+  }
+
+  const score = parseScore(value.score);
+  if (score === null) {
+    return null;
+  }
+
+  return {
+    trackId: value.trackId.trim(),
+    score,
+    explanation: normalizeExplanation(value.explanation, MAX_EXPLANATION_SENTENCES),
+  };
+}
+
+/**
+ * Parse ranking JSON. Retries only on structural failures (invalid JSON,
+ * missing recommendations array, or zero parseable items). Skips malformed
+ * individual items rather than failing the whole response.
+ */
+function parseRankingResult(content: string): RankingResult | null {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(content);
+  } catch {
+    return null;
+  }
+  if (!isObject(raw) || !Array.isArray(raw.recommendations)) {
+    return null;
+  }
+
+  const recommendations: RankedTrack[] = [];
+  for (const item of raw.recommendations) {
+    const parsed = parseRankedTrack(item);
+    if (parsed) {
+      recommendations.push(parsed);
+    }
+  }
+
+  if (recommendations.length === 0) {
+    return null;
+  }
+
+  return { recommendations };
+}
+
 /**
  * Groq Call 1 — Planning. Turns the discovery context into validated
  * { intent, strategy, searchQuery } JSON. Retries once on parse/schema failure
@@ -160,7 +241,7 @@ export async function generatePlan(context: DiscoveryContext): Promise<PlanningR
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         const startedAt = Date.now();
-        const content = await callGroqJson(model, prompt);
+        const content = await callGroqJson(model, prompt, PLANNING_MAX_TOKENS);
         const plan = parsePlanningResult(content);
         const elapsedMs = Date.now() - startedAt;
 
@@ -176,7 +257,6 @@ export async function generatePlan(context: DiscoveryContext): Promise<PlanningR
       } catch (error) {
         lastError = error;
         devLog(`Planning call failed (model=${model}, attempt=${attempt}).`);
-        // Request-level failure: stop retrying this model and try the fallback.
         break;
       }
     }
@@ -189,12 +269,40 @@ export async function generatePlan(context: DiscoveryContext): Promise<PlanningR
 
 /**
  * Groq Call 2 — Ranking. Scores and explains the candidate pool and returns the
- * ranked recommendations.
+ * ranked recommendations. Retries once on parse/schema failure.
  */
 export async function rankCandidates(input: RankingInput): Promise<RankingResult> {
-  throw new Error(
-    `groq.rankCandidates not implemented (Phase 08). Candidates: ${input.candidates.length}.`,
-  );
+  if (input.candidates.length === 0) {
+    return { recommendations: [] };
+  }
+
+  const prompt = buildRankingPromptV1(input);
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const startedAt = Date.now();
+      const content = await callGroqJson(RANKING_MODEL, prompt, RANKING_MAX_TOKENS);
+      const ranking = parseRankingResult(content);
+      const elapsedMs = Date.now() - startedAt;
+
+      if (ranking) {
+        devLog(`Ranking OK (attempt=${attempt}, ${elapsedMs}ms, count=${ranking.recommendations.length}).`);
+        return ranking;
+      }
+
+      devLog(`Ranking output invalid (attempt=${attempt}); retrying once.`);
+      lastError = new GroqError('GROQ_UNAVAILABLE', 'Invalid ranking output.');
+    } catch (error) {
+      lastError = error;
+      devLog(`Ranking call failed (attempt=${attempt}).`);
+      break;
+    }
+  }
+
+  throw lastError instanceof GroqError
+    ? lastError
+    : new GroqError('GROQ_UNAVAILABLE', 'Ranking failed after retries.');
 }
 
 /**

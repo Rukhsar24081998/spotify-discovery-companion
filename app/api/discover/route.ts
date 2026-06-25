@@ -2,29 +2,21 @@ import { NextResponse } from "next/server";
 import {
   MIN_RECOMMENDATIONS,
   type CandidateTrack,
+  type DiscoverResponse,
   type DiscoveryContext,
   type ErrorCode,
+  type PlanningResult,
+  type Recommendation,
 } from "@/types";
-import { generatePlan, GroqError } from "@/lib/groq";
+import { generatePlan, GroqError, rankCandidates } from "@/lib/groq";
 import { searchTracks, SpotifyError } from "@/lib/spotify";
-import { rankCandidatesStub } from "@/lib/ranking";
+import { composeRecommendations, reconcileRanking } from "@/lib/ranking";
 import {
   createErrorResponse,
   statusForErrorCode,
   validateDiscoverInput,
 } from "@/lib/utils";
 import { devLog } from "@/lib/log";
-
-/**
- * Phase 07 interim response. The route stops at ordered candidate tracks (stub).
- * Phase 08 replaces the stub with real AI ranking and returns the final
- * DiscoverResponse (Recommendation[] with Discovery Scores + explanations).
- */
-interface DiscoverOrchestrationResponse {
-  rankedCandidates: CandidateTrack[];
-  candidatePool: CandidateTrack[];
-  meta: { limited: boolean; returnedCount: number };
-}
 
 function elapsedMs(since: number): number {
   return Math.round(performance.now() - since);
@@ -44,7 +36,7 @@ function dedupeByTrackId(tracks: CandidateTrack[]): CandidateTrack[] {
 }
 
 /**
- * Deterministic broadening (no second Groq call): drop the most-specific
+ * Deterministic broadening (no extra Groq call): drop the most-specific
  * trailing term; if the query is already short, fall back to mood + activity.
  */
 function broadenSearchQuery(query: string, context: DiscoveryContext): string {
@@ -62,7 +54,27 @@ function errorCodeOf(error: unknown): ErrorCode {
   return "INTERNAL_ERROR";
 }
 
-/** POST /api/discover — orchestrates planning + search + ranking stub (Phase 07). */
+async function rankAndCompose(
+  context: DiscoveryContext,
+  planning: PlanningResult,
+  candidatePool: CandidateTrack[],
+): Promise<Recommendation[]> {
+  if (candidatePool.length === 0) {
+    return [];
+  }
+
+  const ranking = await rankCandidates({
+    context,
+    intent: planning.intent,
+    strategy: planning.strategy,
+    candidates: candidatePool,
+  });
+
+  const reconciled = reconcileRanking(ranking, candidatePool);
+  return composeRecommendations(reconciled, candidatePool);
+}
+
+/** POST /api/discover — orchestrates planning, search, AI ranking, and composition. */
 export async function POST(request: Request): Promise<NextResponse> {
   const startedAt = performance.now();
 
@@ -102,29 +114,43 @@ export async function POST(request: Request): Promise<NextResponse> {
         candidates = dedupeByTrackId([...candidates, ...more]);
       }
     }
-    const candidatePool = dedupeByTrackId(candidates);
+    let candidatePool = dedupeByTrackId(candidates);
     devLog(
       `[discover] spotify search ${elapsedMs(searchStart)}ms (candidates=${candidatePool.length})`,
     );
 
     const rankingStart = performance.now();
-    const rankedCandidates = rankCandidatesStub(candidatePool);
+    let recommendations = await rankAndCompose(context, planning, candidatePool);
+
+    if (
+      recommendations.length < MIN_RECOMMENDATIONS &&
+      candidatePool.length > 0
+    ) {
+      const broadenedQuery = broadenSearchQuery(planning.searchQuery, context);
+      if (broadenedQuery && broadenedQuery !== planning.searchQuery) {
+        const more = await searchTracks(broadenedQuery);
+        candidatePool = dedupeByTrackId([...candidatePool, ...more]);
+        recommendations = await rankAndCompose(context, planning, candidatePool);
+        devLog(
+          `[discover] post-ranking broadened search (pool=${candidatePool.length}, ranked=${recommendations.length})`,
+        );
+      }
+    }
+
     devLog(
-      `[discover] ranking stub ${elapsedMs(rankingStart)}ms (ranked=${rankedCandidates.length})`,
+      `[discover] ranking ${elapsedMs(rankingStart)}ms (recommendations=${recommendations.length})`,
     );
 
-    const response: DiscoverOrchestrationResponse = {
-      rankedCandidates,
+    const response: DiscoverResponse = {
+      recommendations,
       candidatePool,
       meta: {
-        limited: rankedCandidates.length < MIN_RECOMMENDATIONS,
-        returnedCount: rankedCandidates.length,
+        limited: recommendations.length < MIN_RECOMMENDATIONS,
+        returnedCount: recommendations.length,
       },
     };
 
     devLog(`[discover] total ${elapsedMs(startedAt)}ms`);
-    // NO_RESULTS semantics: an empty pool returns HTTP 200 with empty arrays,
-    // not an error envelope (tech-stack.md → Spotify Edge Cases).
     return NextResponse.json(response);
   } catch (error) {
     const code = errorCodeOf(error);
