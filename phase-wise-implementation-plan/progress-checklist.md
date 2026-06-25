@@ -2,7 +2,7 @@
 
 Live tracker for the Spotify Discovery Companion build. Tick each phase only when its **Definition of Done** (in the phase document) is fully met and the phase has passed review.
 
-**Overall completion: 15% (2 / 13 phases complete)**
+**Overall completion: 23% (3 / 13 phases complete)**
 
 > Update rule: each completed phase = ~7.7%. Recompute `completed / 13` after every merge.
 
@@ -12,7 +12,7 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 
 - [x] **01 — Project Setup** — Deployable Next.js 15 + TS + Tailwind skeleton
 - [x] **02 — Shared Architecture** — `types/`, `lib/` service skeletons, utilities
-- [ ] **03 — Design System** — Theme tokens, primitives, Spotify Home + Discovery card
+- [x] **03 — Design System** — Theme tokens, primitives, Spotify Home + Discovery card
 - [ ] **04 — Discovery Flow UI** — Input screen + LoadingState (mocked)
 - [ ] **05 — Spotify API** — Token cache, Search, `/api/spotify/search`
 - [ ] **06 — Groq Planning** — Groq Call 1 (intent → strategy → query)
@@ -42,11 +42,11 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 - [ ] Unit tests for validators pass — deferred this phase (verified via `npm run build` + `npm run lint`; no test framework per instruction)
 
 ### 03 — Design System
-- [ ] Theme tokens (near-black bg, dark-gray cards, Spotify green accent)
-- [ ] Primitives (pill button, card shell, headings) built
-- [ ] Spotify Home renders with Discovery card
-- [ ] "Discover" navigates to `/discover`
-- [ ] Responsive + accessible
+- [x] Theme tokens (near-black bg, dark-gray cards, Spotify green accent)
+- [x] Primitives (pill button, card shell, headings, icon button) built
+- [x] Spotify Home renders with Discovery card
+- [x] "Discover" navigates to `/discover`
+- [x] Responsive + accessible
 
 ### 04 — Discovery Flow UI
 - [ ] MoodSelector (single-select, canonical order)
