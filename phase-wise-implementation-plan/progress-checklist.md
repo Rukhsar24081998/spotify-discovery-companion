@@ -2,7 +2,7 @@
 
 Live tracker for the Spotify Discovery Companion build. Tick each phase only when its **Definition of Done** (in the phase document) is fully met and the phase has passed review.
 
-**Overall completion: 31% (4 / 13 phases complete)**
+**Overall completion: 38% (5 / 13 phases complete)**
 
 > Update rule: each completed phase = ~7.7%. Recompute `completed / 13` after every merge.
 
@@ -14,7 +14,7 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 - [x] **02 — Shared Architecture** — `types/`, `lib/` service skeletons, utilities
 - [x] **03 — Design System** — Theme tokens, primitives, Spotify Home + Discovery card
 - [x] **04 — Discovery Flow UI** — Input screen + LoadingState (mocked)
-- [ ] **05 — Spotify API** — Token cache, Search, `/api/spotify/search`
+- [x] **05 — Spotify API** — Token cache, Search, `/api/spotify/search`
 - [ ] **06 — Groq Planning** — Groq Call 1 (intent → strategy → query)
 - [ ] **07 — Backend Orchestration** — `/api/discover` with ranking stub
 - [ ] **08 — AI Recommendation Engine** — Groq Call 2: ranking + Discovery Match + explanations
@@ -56,11 +56,11 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 - [x] CTA gating + flow state container
 
 ### 05 — Spotify API
-- [ ] Token fetch + in-memory cache w/ margin
-- [ ] Search returns ~20 mapped candidates
-- [ ] `/api/spotify/search` live; ArtistSearch wired
-- [ ] preview_url availability measured
-- [ ] 429 / empty / auth-fail handled
+- [x] Token fetch + in-memory cache w/ margin
+- [x] Search returns ~20 mapped candidates (paged in 10s; dev-mode `limit` cap)
+- [x] `/api/spotify/search` live; ArtistSearch wired
+- [x] preview_url availability measured (100% in IN-default sample)
+- [x] 429 / empty / auth-fail handled
 
 ### 06 — Groq Planning
 - [ ] `lib/groq.ts` planning call (model + temp + JSON mode)

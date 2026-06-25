@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { X } from "lucide-react";
-import { MAX_FAVORITE_ARTISTS, type ArtistSuggestion } from "@/types";
+import {
+  MAX_FAVORITE_ARTISTS,
+  type ArtistSuggestion,
+  type SpotifySearchResponse,
+} from "@/types";
 
 interface ArtistSearchProps {
   value: string[];
@@ -10,47 +14,27 @@ interface ArtistSearchProps {
 }
 
 const DEBOUNCE_MS = 250;
-const SUGGESTION_LIMIT = 5;
 
-/**
- * Phase 04 mock. Mirrors the eventual `searchArtists(query, limit)` signature so
- * Phase 05 swaps the data source for the real GET /api/spotify/search without
- * touching this component. Do not treat this list as production data.
- */
-const MOCK_ARTISTS: ArtistSuggestion[] = [
-  { id: "1", name: "Arijit Singh", image: "" },
-  { id: "2", name: "The Weeknd", image: "" },
-  { id: "3", name: "Coldplay", image: "" },
-  { id: "4", name: "Dua Lipa", image: "" },
-  { id: "5", name: "A. R. Rahman", image: "" },
-  { id: "6", name: "Taylor Swift", image: "" },
-  { id: "7", name: "Pritam", image: "" },
-  { id: "8", name: "Imagine Dragons", image: "" },
-  { id: "9", name: "Billie Eilish", image: "" },
-  { id: "10", name: "Diljit Dosanjh", image: "" },
-  { id: "11", name: "Ed Sheeran", image: "" },
-  { id: "12", name: "Shreya Ghoshal", image: "" },
-];
-
-async function searchArtistsMock(
+async function fetchArtistSuggestions(
   query: string,
-  limit = SUGGESTION_LIMIT,
+  signal: AbortSignal,
 ): Promise<ArtistSuggestion[]> {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) {
+  const response = await fetch(
+    `/api/spotify/search?q=${encodeURIComponent(query)}&type=artist`,
+    { signal },
+  );
+  if (!response.ok) {
     return [];
   }
-  return MOCK_ARTISTS.filter((artist) =>
-    artist.name.toLowerCase().includes(normalized),
-  ).slice(0, limit);
+  const data = (await response.json()) as SpotifySearchResponse;
+  return data.artists ?? [];
 }
 
-/** Optional artist autocomplete: debounced, max 3, removable chips. */
+/** Optional artist autocomplete: debounced, live Spotify search, max 3 chips. */
 export function ArtistSearch({ value, onChange }: ArtistSearchProps) {
   const inputId = useId();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<ArtistSuggestion[]>([]);
-  const requestId = useRef(0);
 
   const atLimit = value.length >= MAX_FAVORITE_ARTISTS;
 
@@ -60,15 +44,22 @@ export function ArtistSearch({ value, onChange }: ArtistSearchProps) {
       return;
     }
 
-    const currentRequest = ++requestId.current;
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
-      const results = await searchArtistsMock(query);
-      if (currentRequest === requestId.current) {
+      try {
+        const results = await fetchArtistSuggestions(query.trim(), controller.signal);
         setSuggestions(results);
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === "AbortError")) {
+          setSuggestions([]);
+        }
       }
     }, DEBOUNCE_MS);
 
-    return () => clearTimeout(timer);
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
   }, [query, atLimit]);
 
   function addArtist(name: string) {
