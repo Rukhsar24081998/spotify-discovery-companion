@@ -1,19 +1,39 @@
 "use client";
 
-import { useState } from "react";
-import type { Activity, DiscoverRequest, Mood } from "@/types";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type {
+  Activity,
+  CandidateTrack,
+  DiscoverRequest,
+  DiscoverResponse,
+  DiscoveryMeta,
+  ErrorResponse,
+  Mood,
+  Recommendation,
+} from "@/types";
 import { Heading } from "@/components/ui/Heading";
 import { MoodSelector } from "@/components/MoodSelector";
 import { ActivitySelector } from "@/components/ActivitySelector";
 import { ArtistSearch } from "@/components/ArtistSearch";
 import { LoadingState } from "@/components/LoadingState";
+import { RecommendationCard } from "@/components/RecommendationCard";
 
-type FlowPhase = "input" | "loading";
+type FlowPhase = "input" | "loading" | "results";
 
-/**
- * Assemble the /api/discover payload from the collected context. Returns null
- * until both required fields are chosen. Phase 05/09 will POST this object.
- */
+const MIN_LOADING_MS = 1750;
+const SKIP_EXIT_MS = 300;
+
+const DEFAULT_ERROR_MESSAGE = "Please try again in a moment.";
+
+/** Client-held session payload for Phase 11 feedback replay. */
+interface DiscoverySession {
+  discoverRequest: DiscoverRequest;
+  candidatePool: CandidateTrack[];
+  shownTrackIds: string[];
+  skippedTrackIds: string[];
+  skipCount: number;
+}
+
 function buildDiscoverRequest(
   mood: Mood | null,
   activity: Activity | null,
@@ -27,9 +47,29 @@ function buildDiscoverRequest(
     : { mood, activity };
 }
 
+function buildResultsSubtitle(mood: Mood, activity: Activity): string {
+  return `AI-curated for your ${mood.toLowerCase()} mood while ${activity.toLowerCase()}.`;
+}
+
+async function fetchDiscover(request: DiscoverRequest): Promise<DiscoverResponse> {
+  const response = await fetch("/api/discover", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+
+  const data: DiscoverResponse | ErrorResponse = await response.json();
+
+  if ("error" in data) {
+    throw new Error(data.error.message || DEFAULT_ERROR_MESSAGE);
+  }
+
+  return data;
+}
+
 /**
- * Discovery Companion flow container (Screens 2–3). Holds only the state this
- * phase needs; backend wiring and the results screen arrive in Phases 05/09.
+ * Discovery Companion flow (Screens 2–4). Collects context, calls /api/discover,
+ * and renders recommendation cards.
  */
 export function DiscoveryFlow() {
   const [mood, setMood] = useState<Mood | null>(null);
@@ -37,18 +77,245 @@ export function DiscoveryFlow() {
   const [favoriteArtists, setFavoriteArtists] = useState<string[]>([]);
   const [phase, setPhase] = useState<FlowPhase>("input");
 
+  const [discoverRequest, setDiscoverRequest] = useState<DiscoverRequest | null>(null);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [meta, setMeta] = useState<DiscoveryMeta | null>(null);
+  const [savedTrackIds, setSavedTrackIds] = useState<Set<string>>(new Set());
+  const [exitingTrackIds, setExitingTrackIds] = useState<Set<string>>(new Set());
+
+  const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [fetchComplete, setFetchComplete] = useState(false);
+  const [minLoadingComplete, setMinLoadingComplete] = useState(false);
+
+  const pendingResponseRef = useRef<DiscoverResponse | null>(null);
+  const pendingRequestRef = useRef<DiscoverRequest | null>(null);
+  const minLoadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const sessionRef = useRef<DiscoverySession | null>(null);
+
   const canSubmit = mood !== null && activity !== null;
+
+  const applyDiscoverResponse = useCallback(
+    (response: DiscoverResponse, request: DiscoverRequest) => {
+      setDiscoverRequest(request);
+      setRecommendations(response.recommendations);
+      setMeta(response.meta);
+      setSavedTrackIds(new Set());
+      setExitingTrackIds(new Set());
+
+      sessionRef.current = {
+        discoverRequest: request,
+        candidatePool: response.candidatePool,
+        shownTrackIds: response.recommendations.map((rec) => rec.trackId),
+        skippedTrackIds: [],
+        skipCount: 0,
+      };
+    },
+    [],
+  );
+
+  const runDiscover = useCallback(async (request: DiscoverRequest) => {
+    if (minLoadingTimerRef.current) {
+      clearTimeout(minLoadingTimerRef.current);
+    }
+
+    setPhase("loading");
+    setLoadingError(null);
+    setFetchComplete(false);
+    setMinLoadingComplete(false);
+    pendingResponseRef.current = null;
+    pendingRequestRef.current = request;
+
+    minLoadingTimerRef.current = setTimeout(() => {
+      setMinLoadingComplete(true);
+    }, MIN_LOADING_MS);
+
+    try {
+      const response = await fetchDiscover(request);
+      pendingResponseRef.current = response;
+      setFetchComplete(true);
+    } catch (error) {
+      if (minLoadingTimerRef.current) {
+        clearTimeout(minLoadingTimerRef.current);
+      }
+      setLoadingError(error instanceof Error ? error.message : DEFAULT_ERROR_MESSAGE);
+      setFetchComplete(true);
+      setMinLoadingComplete(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (phase !== "loading" || loadingError) {
+      return;
+    }
+    if (!fetchComplete || !minLoadingComplete) {
+      return;
+    }
+    const response = pendingResponseRef.current;
+    const request = pendingRequestRef.current;
+    if (!response || !request) {
+      return;
+    }
+
+    applyDiscoverResponse(response, request);
+    pendingResponseRef.current = null;
+    setPhase("results");
+  }, [phase, loadingError, fetchComplete, minLoadingComplete, applyDiscoverResponse]);
+
+  useEffect(() => {
+    const skipTimers = skipTimersRef.current;
+    return () => {
+      if (minLoadingTimerRef.current) {
+        clearTimeout(minLoadingTimerRef.current);
+      }
+      skipTimers.forEach((timer) => clearTimeout(timer));
+    };
+  }, []);
 
   function handleSubmit() {
     const request = buildDiscoverRequest(mood, activity, favoriteArtists);
     if (!request) {
       return;
     }
-    setPhase("loading");
+    void runDiscover(request);
+  }
+
+  function handleRetry() {
+    const request = pendingRequestRef.current ?? discoverRequest ?? buildDiscoverRequest(mood, activity, favoriteArtists);
+    if (request) {
+      void runDiscover(request);
+    }
+  }
+
+  function handleAdjustInput() {
+    setPhase("input");
+    setLoadingError(null);
+  }
+
+  function handleSave(trackId: string) {
+    setSavedTrackIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(trackId)) {
+        next.delete(trackId);
+      } else {
+        next.add(trackId);
+      }
+      return next;
+    });
+  }
+
+  function handleSkip(trackId: string) {
+    if (exitingTrackIds.has(trackId)) {
+      return;
+    }
+
+    setExitingTrackIds((prev) => new Set(prev).add(trackId));
+
+    const timer = setTimeout(() => {
+      setRecommendations((prev) => prev.filter((rec) => rec.trackId !== trackId));
+      setExitingTrackIds((prev) => {
+        const next = new Set(prev);
+        next.delete(trackId);
+        return next;
+      });
+
+      if (sessionRef.current) {
+        sessionRef.current = {
+          ...sessionRef.current,
+          shownTrackIds: sessionRef.current.shownTrackIds.filter((id) => id !== trackId),
+          skippedTrackIds: [...sessionRef.current.skippedTrackIds, trackId],
+          skipCount: sessionRef.current.skipCount + 1,
+        };
+      }
+
+      skipTimersRef.current.delete(trackId);
+    }, SKIP_EXIT_MS);
+
+    skipTimersRef.current.set(trackId, timer);
   }
 
   if (phase === "loading") {
-    return <LoadingState />;
+    return <LoadingState error={loadingError} onRetry={handleRetry} />;
+  }
+
+  if (phase === "results" && discoverRequest && meta) {
+    const { mood: resultMood, activity: resultActivity } = discoverRequest;
+
+    if (recommendations.length === 0) {
+      return (
+        <div className="flex flex-col gap-6 animate-fade-in">
+          <div className="flex flex-col gap-2">
+            <Heading level={1}>Your Discoveries</Heading>
+            <p className="text-body text-white/60">
+              We couldn&apos;t find a great match for this combination yet.
+            </p>
+          </div>
+          <p className="text-body text-white/80">
+            Try a different mood or activity — for example, switch from{" "}
+            <span className="text-white">{resultMood}</span> to something adjacent, or
+            choose an activity that better matches how you&apos;re listening right now.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleAdjustInput}
+              className="inline-flex items-center justify-center rounded-full bg-accent px-6 py-3 text-support font-semibold text-black transition-colors duration-150 motion-reduce:transition-none hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              Adjust mood &amp; activity
+            </button>
+            <button
+              type="button"
+              onClick={handleRetry}
+              className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-3 text-support font-medium text-white transition-colors duration-150 motion-reduce:transition-none hover:border-white/40 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col gap-8 animate-fade-in">
+        <div className="flex flex-col gap-2">
+          <Heading level={1}>Your Discoveries</Heading>
+          <p className="text-body text-white/60">
+            {buildResultsSubtitle(resultMood, resultActivity)}
+          </p>
+        </div>
+
+        {meta.limited && (
+          <p
+            role="status"
+            className="rounded-xl border border-white/10 bg-surface px-4 py-3 text-body text-white/70"
+          >
+            We found a few matches for now. Try adjusting your mood or activity for more.
+          </p>
+        )}
+
+        <ul className="flex flex-col gap-6" aria-label="Recommendations">
+          {recommendations.map((recommendation) => (
+            <li key={recommendation.trackId} className="list-none">
+              <RecommendationCard
+                recommendation={recommendation}
+                isSaved={savedTrackIds.has(recommendation.trackId)}
+                isExiting={exitingTrackIds.has(recommendation.trackId)}
+                onSave={() => handleSave(recommendation.trackId)}
+                onSkip={() => handleSkip(recommendation.trackId)}
+              />
+            </li>
+          ))}
+        </ul>
+
+        <button
+          type="button"
+          onClick={handleAdjustInput}
+          className="inline-flex w-fit items-center justify-center rounded-full border border-white/20 px-5 py-2.5 text-support text-white/70 transition-colors duration-150 motion-reduce:transition-none hover:border-white/40 hover:bg-surface-hover hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          Start a new discovery
+        </button>
+      </div>
+    );
   }
 
   return (
