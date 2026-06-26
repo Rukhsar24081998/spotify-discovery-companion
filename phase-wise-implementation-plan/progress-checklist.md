@@ -2,7 +2,7 @@
 
 Live tracker for the Spotify Discovery Companion build. Tick each phase only when its **Definition of Done** (in the phase document) is fully met and the phase has passed review.
 
-**Overall completion: 54% (7 / 13 phases complete)**
+**Overall completion: 77% (10 / 13 phases complete)**
 
 > Update rule: each completed phase = ~7.7%. Recompute `completed / 13` after every merge.
 
@@ -17,9 +17,9 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 - [x] **05 — Spotify API** — Token cache, Search, `/api/spotify/search`
 - [x] **06 — Groq Planning** — Groq Call 1 (intent → strategy → query)
 - [x] **07 — Backend Orchestration** — `/api/discover` with ranking stub
-- [ ] **08 — AI Recommendation Engine** — Groq Call 2: ranking + Discovery Match + explanations
-- [ ] **09 — Recommendation Cards** — Results screen + actions, wired to `/api/discover`
-- [ ] **10 — Preview Player** — Inline 30-sec preview + unavailable degradation
+- [x] **08 — AI Recommendation Engine** — Groq Call 2: ranking + Discovery Match + explanations
+- [x] **09 — Recommendation Cards** — Results screen + actions, wired to `/api/discover`
+- [x] **10 — Preview Player** — Inline 30-sec preview + unavailable degradation
 - [ ] **11 — Feedback Loop** — FeedbackDialog + `/api/feedback`
 - [ ] **12 — Polish** — Edge/empty/error states, a11y, responsiveness
 - [ ] **13 — Deployment** — Vercel production deploy + verification
@@ -77,22 +77,22 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 - [x] Draft `ARCHITECTURE.md` (as-built + decisions, links to `/docs`)
 
 ### 08 — AI Recommendation Engine
-- [ ] Groq Call 2 ranking + explanations
-- [ ] Discovery Match formula + score verification
-- [ ] Variety rule + trackId validation
-- [ ] Fallback (broadened search) + min/target counts
-- [ ] Finalize `ARCHITECTURE.md` (real ranking layer reflected)
+- [x] Groq Call 2 ranking + explanations
+- [x] Discovery Match scoring + server verification — principles-based prompt + `clampScore()` (approved refinement; not the literal weighted formula from `ai-workflow.md`)
+- [x] Variety rule + trackId validation — unknown IDs discarded; one track per primary artist (server); near-duplicate title matching prompt-guided only (no server heuristic)
+- [x] Fallback (broadened search) + min/target counts
+- [x] Finalize `ARCHITECTURE.md` (real ranking layer reflected)
 
 ### 09 — Recommendation Cards
-- [ ] RecommendationCard (artwork, title, artist, score, explanation)
-- [ ] Actions: Continue in Spotify / Save / Skip hierarchy
-- [ ] Wired to `/api/discover` + LoadingState
-- [ ] Skip-count tracking
+- [x] RecommendationCard (artwork, title, artist, score, explanation)
+- [x] Actions: Continue in Spotify / Save / Skip hierarchy
+- [x] Wired to `/api/discover` + LoadingState (orchestration in `DiscoveryFlow`)
+- [x] Skip-count tracking (`sessionRef`; consumed by Phase 11 feedback trigger)
 
 ### 10 — Preview Player
-- [ ] PreviewPlayer inline with progress + finished state
-- [ ] Preview-unavailable degradation
-- [ ] Single-active-player behavior
+- [x] PreviewPlayer inline with progress + finished state
+- [x] Preview-unavailable degradation (`previewUrl === null` or playback error)
+- [x] Single-active-player behavior (`activePreviewTrackId` in `DiscoveryFlow`)
 
 ### 11 — Feedback Loop
 - [ ] FeedbackDialog after 2 skips (optional/dismissible)

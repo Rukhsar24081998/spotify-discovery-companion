@@ -82,6 +82,7 @@ export function DiscoveryFlow() {
   const [meta, setMeta] = useState<DiscoveryMeta | null>(null);
   const [savedTrackIds, setSavedTrackIds] = useState<Set<string>>(new Set());
   const [exitingTrackIds, setExitingTrackIds] = useState<Set<string>>(new Set());
+  const [activePreviewTrackId, setActivePreviewTrackId] = useState<string | null>(null);
 
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [fetchComplete, setFetchComplete] = useState(false);
@@ -102,6 +103,7 @@ export function DiscoveryFlow() {
       setMeta(response.meta);
       setSavedTrackIds(new Set());
       setExitingTrackIds(new Set());
+      setActivePreviewTrackId(null);
 
       sessionRef.current = {
         discoverRequest: request,
@@ -188,8 +190,17 @@ export function DiscoveryFlow() {
   }
 
   function handleAdjustInput() {
+    setActivePreviewTrackId(null);
     setPhase("input");
     setLoadingError(null);
+  }
+
+  function handlePreviewActivate(trackId: string) {
+    setActivePreviewTrackId(trackId);
+  }
+
+  function handlePreviewDeactivate(trackId: string) {
+    setActivePreviewTrackId((current) => (current === trackId ? null : current));
   }
 
   function handleSave(trackId: string) {
@@ -207,6 +218,10 @@ export function DiscoveryFlow() {
   function handleSkip(trackId: string) {
     if (exitingTrackIds.has(trackId)) {
       return;
+    }
+
+    if (activePreviewTrackId === trackId) {
+      setActivePreviewTrackId(null);
     }
 
     setExitingTrackIds((prev) => new Set(prev).add(trackId));
@@ -300,6 +315,9 @@ export function DiscoveryFlow() {
                 recommendation={recommendation}
                 isSaved={savedTrackIds.has(recommendation.trackId)}
                 isExiting={exitingTrackIds.has(recommendation.trackId)}
+                isPreviewActive={activePreviewTrackId === recommendation.trackId}
+                onPreviewActivate={handlePreviewActivate}
+                onPreviewDeactivate={handlePreviewDeactivate}
                 onSave={() => handleSave(recommendation.trackId)}
                 onSkip={() => handleSkip(recommendation.trackId)}
               />

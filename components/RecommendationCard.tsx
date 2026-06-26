@@ -4,11 +4,15 @@ import { useState } from "react";
 import { Heart, Music2, SkipForward, Star } from "lucide-react";
 import type { Recommendation } from "@/types";
 import { CardShell } from "@/components/ui/CardShell";
+import { PreviewPlayer } from "@/components/PreviewPlayer";
 
 export interface RecommendationCardProps {
   recommendation: Recommendation;
   isSaved: boolean;
   isExiting?: boolean;
+  isPreviewActive: boolean;
+  onPreviewActivate: (trackId: string) => void;
+  onPreviewDeactivate: (trackId: string) => void;
   onSave: () => void;
   onSkip: () => void;
 }
@@ -21,6 +25,9 @@ export function RecommendationCard({
   recommendation,
   isSaved,
   isExiting = false,
+  isPreviewActive,
+  onPreviewActivate,
+  onPreviewDeactivate,
   onSave,
   onSkip,
 }: RecommendationCardProps) {
@@ -77,13 +84,14 @@ export function RecommendationCard({
 
       <p className="line-clamp-3 text-body text-white/80">{recommendation.explanation}</p>
 
-      {/* Phase 10: PreviewPlayer replaces this placeholder */}
-      <div
-        aria-hidden="true"
-        className="rounded-lg border border-dashed border-white/15 px-4 py-3 text-support text-white/40"
-      >
-        ▶ Preview (30 sec)
-      </div>
+      <PreviewPlayer
+        previewUrl={recommendation.previewUrl}
+        trackId={recommendation.trackId}
+        trackTitle={recommendation.title}
+        isActive={isPreviewActive}
+        onActivate={onPreviewActivate}
+        onDeactivate={onPreviewDeactivate}
+      />
 
       <div className="flex flex-col gap-3 pt-1">
         <a
