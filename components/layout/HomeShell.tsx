@@ -1,0 +1,27 @@
+import type { ReactNode } from "react";
+import { BottomPlayer } from "@/components/layout/BottomPlayer";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { TopNavigation } from "@/components/layout/TopNavigation";
+
+interface HomeShellProps {
+  children: ReactNode;
+}
+
+/**
+ * Full Spotify-style shell used by the home page only (Sprint 1).
+ */
+export function HomeShell({ children }: HomeShellProps) {
+  return (
+    <div className="flex min-h-screen flex-col bg-black">
+      <div className="flex min-h-0 flex-1 gap-0 p-2 pl-0">
+        <Sidebar activeItem="home" />
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg bg-[#121212]">
+          <TopNavigation />
+          <PageContainer>{children}</PageContainer>
+        </div>
+      </div>
+      <BottomPlayer />
+    </div>
+  );
+}

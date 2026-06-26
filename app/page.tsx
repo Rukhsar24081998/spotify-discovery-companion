@@ -1,24 +1,21 @@
-import { DiscoveryCard } from "@/components/DiscoveryCard";
-import { Heading } from "@/components/ui/Heading";
+import { CategoryTabs } from "@/components/home/CategoryTabs";
+import { DiscoveryInsights } from "@/components/home/DiscoveryInsights";
+import { HeroCard } from "@/components/home/HeroCard";
+import { MadeForYou } from "@/components/home/MadeForYou";
+import { RecentlyPlayed } from "@/components/home/RecentlyPlayed";
+import { HomeShell } from "@/components/layout/HomeShell";
 
 /**
- * Screen 1 — Spotify Home. The familiar Spotify experience stays intact; we add
- * exactly one optional Discovery Companion card (ui-guidelines.md -> Screen 1).
+ * Screen 1 — Spotify Home shell with AI Discovery hero (design-reference/01-home.png).
  */
 export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-content flex-col gap-10 px-6 py-12 sm:py-16">
-      <header className="flex flex-col gap-1">
-        <p className="text-support text-white/50">Spotify</p>
-        <Heading level={1}>Good evening</Heading>
-      </header>
-
-      <section aria-labelledby="discovery-companion-heading" className="animate-fade-in">
-        <h2 id="discovery-companion-heading" className="sr-only">
-          Discovery Companion
-        </h2>
-        <DiscoveryCard />
-      </section>
-    </main>
+    <HomeShell>
+      <CategoryTabs />
+      <HeroCard />
+      <RecentlyPlayed />
+      <MadeForYou />
+      <DiscoveryInsights />
+    </HomeShell>
   );
 }
