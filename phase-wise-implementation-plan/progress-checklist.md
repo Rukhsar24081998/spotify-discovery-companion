@@ -2,7 +2,7 @@
 
 Live tracker for the Spotify Discovery Companion build. Tick each phase only when its **Definition of Done** (in the phase document) is fully met and the phase has passed review.
 
-**Overall completion: 85% (11 / 13 phases complete)**
+**Overall completion: 92% (12 / 13 phases complete)**
 
 > Update rule: each completed phase = ~7.7%. Recompute `completed / 13` after every merge.
 
@@ -21,7 +21,7 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 - [x] **09 — Recommendation Cards** — Results screen + actions, wired to `/api/discover`
 - [x] **10 — Preview Player** — Inline 30-sec preview + unavailable degradation
 - [x] **11 — Feedback Loop** — FeedbackDialog + `/api/feedback`
-- [ ] **12 — Polish** — Edge/empty/error states, a11y, responsiveness
+- [x] **12 — Polish** — Edge/empty/error states, a11y, responsiveness
 - [ ] **13 — Deployment** — Vercel production deploy + verification
 
 ---
@@ -101,10 +101,10 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 - [x] Shown/skipped excluded
 
 ### 12 — Polish
-- [ ] Limited / no-results / service-error states
-- [ ] Accessibility pass (keyboard, focus, contrast, alt, semantics)
-- [ ] Responsive (desktop/tablet/mobile)
-- [ ] Motion polish + reduced-motion
+- [x] Limited / no-results / service-error states — guidelines copy; fixed friendly errors (no API message leakage)
+- [x] Accessibility pass (keyboard, focus, contrast, alt, semantics) — arrow keys in selectors/dialog; combobox nav; 44px targets
+- [x] Responsive (desktop/tablet/mobile) — touch targets; existing single-column layout retained
+- [x] Motion polish + reduced-motion — card hover elevation; global + component `motion-reduce` honored
 
 ### 13 — Deployment
 - [ ] Env vars in Vercel

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { FEEDBACK_REASONS, type FeedbackReason } from "@/types";
 import { PillButton } from "@/components/ui/PillButton";
 
@@ -13,6 +13,9 @@ interface FeedbackDialogProps {
   submitting: boolean;
   error: string | null;
 }
+
+const FEEDBACK_ERROR_MESSAGE =
+  "Something went wrong while updating recommendations. Please try again in a moment.";
 
 /**
  * Optional feedback dialog after multiple skips. Single-select reason, dismissible.
@@ -42,7 +45,7 @@ export function FeedbackDialog({
       return;
     }
 
-    function handleKeyDown(event: KeyboardEvent) {
+    function handleKeyDown(event: globalThis.KeyboardEvent) {
       if (event.key === "Escape" && !submitting) {
         onDismiss();
       }
@@ -51,6 +54,24 @@ export function FeedbackDialog({
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open, submitting, onDismiss]);
+
+  function handleRadioKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
+      return;
+    }
+    event.preventDefault();
+    const currentIndex = selectedReason
+      ? FEEDBACK_REASONS.indexOf(selectedReason)
+      : -1;
+    const delta = event.key === "ArrowDown" ? 1 : -1;
+    const nextIndex =
+      currentIndex === -1
+        ? delta > 0
+          ? 0
+          : FEEDBACK_REASONS.length - 1
+        : (currentIndex + delta + FEEDBACK_REASONS.length) % FEEDBACK_REASONS.length;
+    onSelectReason(FEEDBACK_REASONS[nextIndex]);
+  }
 
   if (!open) {
     return null;
@@ -68,7 +89,7 @@ export function FeedbackDialog({
         aria-label="Dismiss feedback dialog"
         disabled={submitting}
         onClick={onDismiss}
-        className="absolute inset-0 bg-black/70 motion-reduce:transition-none"
+        className="absolute inset-0 bg-black/70 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
       />
 
       <div
@@ -91,6 +112,7 @@ export function FeedbackDialog({
           <div
             role="radiogroup"
             aria-label="Feedback reason"
+            onKeyDown={handleRadioKeyDown}
             className="flex flex-col gap-2"
           >
             {FEEDBACK_REASONS.map((reason) => {
@@ -113,8 +135,8 @@ export function FeedbackDialog({
           </div>
 
           {error && (
-            <p role="alert" className="text-support text-red-400">
-              {error}
+            <p role="alert" className="text-support text-white/70">
+              {FEEDBACK_ERROR_MESSAGE}
             </p>
           )}
 
@@ -124,7 +146,7 @@ export function FeedbackDialog({
               type="button"
               disabled={submitting}
               onClick={onDismiss}
-              className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2.5 text-support font-medium text-white/70 transition-colors duration-150 motion-reduce:transition-none hover:border-white/40 hover:bg-surface-hover hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-white/20 px-5 py-2.5 text-support font-medium text-white/70 transition-colors duration-150 motion-reduce:transition-none hover:border-white/40 hover:bg-surface-hover hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
             >
               Not now
             </button>
@@ -132,7 +154,7 @@ export function FeedbackDialog({
               type="button"
               disabled={!canSubmit}
               onClick={onSubmit}
-              className="inline-flex items-center justify-center rounded-full bg-accent px-5 py-2.5 text-support font-semibold text-black transition-colors duration-150 motion-reduce:transition-none hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-white/40"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-accent px-5 py-2.5 text-support font-semibold text-black transition-colors duration-150 motion-reduce:transition-none hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-white/50"
             >
               {submitting ? "Updating…" : "Update Recommendations"}
             </button>

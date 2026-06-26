@@ -28,6 +28,8 @@ const MIN_LOADING_MS = 1750;
 const SKIP_EXIT_MS = 300;
 
 const DEFAULT_ERROR_MESSAGE = "Please try again in a moment.";
+/** Truthy sentinel — LoadingState shows fixed copy, not this string. */
+const SERVICE_ERROR_FLAG = "service-error";
 
 /** Client-held session payload for Phase 11 feedback replay. */
 interface DiscoverySession {
@@ -57,32 +59,52 @@ function buildResultsSubtitle(mood: Mood, activity: Activity): string {
 }
 
 async function fetchDiscover(request: DiscoverRequest): Promise<DiscoverResponse> {
-  const response = await fetch("/api/discover", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request),
-  });
+  let response: Response;
+  try {
+    response = await fetch("/api/discover", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+  } catch {
+    throw new Error(DEFAULT_ERROR_MESSAGE);
+  }
 
-  const data: DiscoverResponse | ErrorResponse = await response.json();
+  let data: DiscoverResponse | ErrorResponse;
+  try {
+    data = (await response.json()) as DiscoverResponse | ErrorResponse;
+  } catch {
+    throw new Error(DEFAULT_ERROR_MESSAGE);
+  }
 
   if ("error" in data) {
-    throw new Error(data.error.message || DEFAULT_ERROR_MESSAGE);
+    throw new Error(DEFAULT_ERROR_MESSAGE);
   }
 
   return data;
 }
 
 async function fetchFeedback(request: FeedbackRequest): Promise<FeedbackResponse> {
-  const response = await fetch("/api/feedback", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request),
-  });
+  let response: Response;
+  try {
+    response = await fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+  } catch {
+    throw new Error(DEFAULT_ERROR_MESSAGE);
+  }
 
-  const data: FeedbackResponse | ErrorResponse = await response.json();
+  let data: FeedbackResponse | ErrorResponse;
+  try {
+    data = (await response.json()) as FeedbackResponse | ErrorResponse;
+  } catch {
+    throw new Error(DEFAULT_ERROR_MESSAGE);
+  }
 
   if ("error" in data) {
-    throw new Error(data.error.message || DEFAULT_ERROR_MESSAGE);
+    throw new Error(DEFAULT_ERROR_MESSAGE);
   }
 
   return data;
@@ -171,11 +193,11 @@ export function DiscoveryFlow() {
       const response = await fetchDiscover(request);
       pendingResponseRef.current = response;
       setFetchComplete(true);
-    } catch (error) {
+    } catch {
       if (minLoadingTimerRef.current) {
         clearTimeout(minLoadingTimerRef.current);
       }
-      setLoadingError(error instanceof Error ? error.message : DEFAULT_ERROR_MESSAGE);
+      setLoadingError(SERVICE_ERROR_FLAG);
       setFetchComplete(true);
       setMinLoadingComplete(true);
     }
@@ -340,8 +362,8 @@ export function DiscoveryFlow() {
       };
       setFeedbackDialogOpen(false);
       setFeedbackSelectedReason(null);
-    } catch (error) {
-      setFeedbackError(error instanceof Error ? error.message : DEFAULT_ERROR_MESSAGE);
+    } catch {
+      setFeedbackError(SERVICE_ERROR_FLAG);
     } finally {
       feedbackSubmittingRef.current = false;
       setFeedbackSubmitting(false);
@@ -360,27 +382,22 @@ export function DiscoveryFlow() {
         <div className="flex flex-col gap-6 animate-fade-in">
           <div className="flex flex-col gap-2">
             <Heading level={1}>Your Discoveries</Heading>
-            <p className="text-body text-white/60">
-              We couldn&apos;t find a great match for this combination yet.
+            <p className="text-body text-white/70">
+              We couldn&apos;t find a great match right now.
             </p>
           </div>
-          <p className="text-body text-white/80">
-            Try a different mood or activity — for example, switch from{" "}
-            <span className="text-white">{resultMood}</span> to something adjacent, or
-            choose an activity that better matches how you&apos;re listening right now.
-          </p>
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
               onClick={handleAdjustInput}
-              className="inline-flex items-center justify-center rounded-full bg-accent px-6 py-3 text-support font-semibold text-black transition-colors duration-150 motion-reduce:transition-none hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-accent px-6 py-3 text-support font-semibold text-black transition-colors duration-150 motion-reduce:transition-none hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               Adjust mood &amp; activity
             </button>
             <button
               type="button"
               onClick={handleRetry}
-              className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-3 text-support font-medium text-white transition-colors duration-150 motion-reduce:transition-none hover:border-white/40 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-white/20 px-6 py-3 text-support font-medium text-white transition-colors duration-150 motion-reduce:transition-none hover:border-white/40 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               Try again
             </button>
@@ -400,12 +417,13 @@ export function DiscoveryFlow() {
           </div>
 
           {meta.limited && (
-            <p
+            <div
               role="status"
-              className="rounded-xl border border-white/10 bg-surface px-4 py-3 text-body text-white/70"
+              className="flex flex-col gap-1 rounded-xl border border-white/10 bg-surface px-4 py-3 text-body text-white/70"
             >
-              We found a few matches for now. Try adjusting your mood or activity for more.
-            </p>
+              <p>We found a few matches for now.</p>
+              <p>Try adjusting your mood or activity for more.</p>
+            </div>
           )}
 
           <ul className="flex flex-col gap-6" aria-label="Recommendations">
@@ -461,7 +479,7 @@ export function DiscoveryFlow() {
         type="button"
         onClick={handleSubmit}
         disabled={!canSubmit}
-        className="inline-flex w-full items-center justify-center rounded-full bg-accent px-6 py-3.5 text-body font-semibold text-black transition-colors duration-150 motion-reduce:transition-none hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-white/40 sm:w-auto sm:self-start"
+        className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full bg-accent px-6 py-3.5 text-body font-semibold text-black transition-colors duration-150 motion-reduce:transition-none hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-white/50 sm:w-auto sm:self-start"
       >
         Discover Music
       </button>

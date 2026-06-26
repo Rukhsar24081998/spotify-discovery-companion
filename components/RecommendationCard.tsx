@@ -40,6 +40,7 @@ export function RecommendationCard({
 
   return (
     <CardShell
+      interactive
       className={`flex flex-col gap-4 transition-all duration-300 ease-out motion-reduce:transition-none ${exitClasses}`}
     >
       <div className="relative aspect-square w-full max-w-[240px] overflow-hidden rounded-lg bg-surface-hover">
@@ -109,7 +110,7 @@ export function RecommendationCard({
             type="button"
             onClick={onSave}
             aria-pressed={isSaved}
-            className="inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-support font-medium text-white transition-colors duration-150 motion-reduce:transition-none hover:border-white/40 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-support font-medium text-white transition-colors duration-150 motion-reduce:transition-none hover:border-white/40 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <Heart
               className={`h-4 w-4 ${isSaved ? "fill-accent text-accent" : ""}`}
@@ -121,7 +122,7 @@ export function RecommendationCard({
           <button
             type="button"
             onClick={onSkip}
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-support text-white/60 transition-colors duration-150 motion-reduce:transition-none hover:bg-surface-hover hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-4 py-2.5 text-support text-white/70 transition-colors duration-150 motion-reduce:transition-none hover:bg-surface-hover hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <SkipForward className="h-4 w-4" aria-hidden="true" />
             Skip

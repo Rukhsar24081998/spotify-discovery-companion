@@ -6,7 +6,7 @@ interface PillButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const BASE =
-  "inline-flex items-center justify-center rounded-full px-5 py-2 text-support font-medium " +
+  "inline-flex min-h-[44px] items-center justify-center rounded-full px-5 py-2 text-support font-medium " +
   "transition-colors duration-150 motion-reduce:transition-none " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 " +
   "focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50";

@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, type KeyboardEvent } from "react";
 import { PillButton } from "@/components/ui/PillButton";
 
 interface SelectionGroupProps<T extends string> {
@@ -22,16 +22,47 @@ export function SelectionGroup<T extends string>({
   onChange,
 }: SelectionGroupProps<T>) {
   const headingId = useId();
+  const groupId = useId();
+
+  function focusOption(option: T) {
+    document.getElementById(`${groupId}-${option}`)?.focus();
+  }
+
+  function handleGroupKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const navigationKeys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"];
+    if (!navigationKeys.includes(event.key)) {
+      return;
+    }
+
+    event.preventDefault();
+    const currentIndex = value !== null ? options.indexOf(value) : -1;
+    const delta = event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 1;
+    const nextIndex =
+      currentIndex === -1
+        ? delta > 0
+          ? 0
+          : options.length - 1
+        : (currentIndex + delta + options.length) % options.length;
+    const nextOption = options[nextIndex];
+    onChange(nextOption);
+    focusOption(nextOption);
+  }
 
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
       <h2 id={headingId} className="text-title font-semibold text-white">
         {legend}
       </h2>
-      <div role="group" aria-labelledby={headingId} className="flex flex-wrap gap-2">
+      <div
+        role="group"
+        aria-labelledby={headingId}
+        onKeyDown={handleGroupKeyDown}
+        className="flex flex-wrap gap-2"
+      >
         {options.map((option) => (
           <PillButton
             key={option}
+            id={`${groupId}-${option}`}
             selected={value === option}
             onClick={() => onChange(value === option ? null : option)}
           >

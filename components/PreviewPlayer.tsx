@@ -171,8 +171,11 @@ export function PreviewPlayer({
 
   if (status === "unavailable" || !previewUrl) {
     return (
-      <p className="rounded-lg bg-surface-hover px-4 py-3 text-support text-white/50">
-        Preview unavailable
+      <p
+        role="status"
+        className="rounded-lg bg-surface-hover px-4 py-3 text-support text-white/60"
+      >
+        Preview unavailable — Continue in Spotify
       </p>
     );
   }
@@ -213,7 +216,7 @@ export function PreviewPlayer({
             <Play className="h-5 w-5" aria-hidden="true" />
           )}
         </IconButton>
-        <span className="text-support text-white/80">
+        <span className="text-support text-white/80" aria-live="polite">
           {status === "loading" ? "Loading preview…" : "Preview (30 sec)"}
         </span>
       </div>

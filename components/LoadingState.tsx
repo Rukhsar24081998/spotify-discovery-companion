@@ -26,6 +26,9 @@ const STEPS = [
 
 const DEFAULT_STEP_DURATION_MS = 800;
 
+const SERVICE_ERROR_HEADING = "Something went wrong while discovering music.";
+const SERVICE_ERROR_BODY = "Please try again in a moment.";
+
 /**
  * Screen 3 — the AI reasoning screen. Communicates progress as a checking-off
  * step list rather than a spinner (ui-guidelines.md -> AI Processing Screen).
@@ -55,14 +58,14 @@ export function LoadingState({
 
   if (error) {
     return (
-      <div className="flex flex-col items-start gap-4">
-        <Heading level={2}>Something went wrong while discovering music.</Heading>
-        <p className="text-body text-white/60">{error}</p>
+      <div role="alert" className="flex flex-col items-start gap-4">
+        <Heading level={2}>{SERVICE_ERROR_HEADING}</Heading>
+        <p className="text-body text-white/70">{SERVICE_ERROR_BODY}</p>
         {onRetry && (
           <button
             type="button"
             onClick={onRetry}
-            className="inline-flex items-center justify-center rounded-full bg-accent px-6 py-3 text-support font-semibold text-black transition-colors duration-150 motion-reduce:transition-none hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-accent px-6 py-3 text-support font-semibold text-black transition-colors duration-150 motion-reduce:transition-none hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             Try again
           </button>
@@ -99,7 +102,7 @@ export function LoadingState({
                 className={
                   done || active
                     ? "text-body text-white"
-                    : "text-body text-white/40"
+                    : "text-body text-white/50"
                 }
               >
                 {step}
