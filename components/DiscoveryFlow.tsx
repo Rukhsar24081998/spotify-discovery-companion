@@ -24,6 +24,13 @@ import { FeedbackDialog } from "@/components/FeedbackDialog";
 
 type FlowPhase = "input" | "loading" | "results";
 
+export type DiscoveryFlowPhase = FlowPhase;
+
+interface DiscoveryFlowProps {
+  /** Notifies the parent when the visible flow phase changes (presentation layer only). */
+  onPhaseChange?: (phase: FlowPhase) => void;
+}
+
 const MIN_LOADING_MS = 1750;
 const SKIP_EXIT_MS = 300;
 
@@ -114,7 +121,7 @@ async function fetchFeedback(request: FeedbackRequest): Promise<FeedbackResponse
  * Discovery Companion flow (Screens 2–4). Collects context, calls /api/discover,
  * and renders recommendation cards.
  */
-export function DiscoveryFlow() {
+export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
   const [mood, setMood] = useState<Mood | null>(null);
   const [activity, setActivity] = useState<Activity | null>(null);
   const [favoriteArtists, setFavoriteArtists] = useState<string[]>([]);
@@ -146,6 +153,10 @@ export function DiscoveryFlow() {
   const feedbackSubmittingRef = useRef(false);
 
   const canSubmit = mood !== null && activity !== null;
+
+  useEffect(() => {
+    onPhaseChange?.(phase);
+  }, [phase, onPhaseChange]);
 
   const applyDiscoverResponse = useCallback(
     (response: DiscoverResponse, request: DiscoverRequest) => {
@@ -466,7 +477,7 @@ export function DiscoveryFlow() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div id="discover-form" className="mb-10 flex scroll-mt-6 flex-col gap-8">
       <Heading level={1}>Let&apos;s find something you&apos;ll love.</Heading>
 
       <MoodSelector value={mood} onChange={setMood} />

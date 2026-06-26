@@ -1,14 +1,13 @@
-import Link from "next/link";
 import { Sparkles } from "lucide-react";
 
 /**
- * Large AI Discovery hero card matching design-reference/01-home.png.
- * Primary CTA preserves the existing /discover navigation flow.
+ * Discover page hero matching design-reference/02-discovery.png.
+ * Primary CTA scrolls to the form — the user is already on the discover route.
  */
-export function HeroCard() {
+export function DiscoverHero() {
   return (
     <section
-      aria-labelledby="hero-heading"
+      aria-labelledby="discover-hero-heading"
       className="relative mb-8 overflow-hidden rounded-xl p-8 sm:p-10 lg:min-h-[280px] lg:p-12"
       style={{
         background:
@@ -23,7 +22,7 @@ export function HeroCard() {
           Beta Experience
         </p>
         <h1
-          id="hero-heading"
+          id="discover-hero-heading"
           className="text-[2.75rem] font-bold leading-[1.05] tracking-[-0.03em] text-white sm:text-[3.25rem]"
         >
           AI Discovery Companion
@@ -33,18 +32,17 @@ export function HeroCard() {
           next.
         </p>
         <p className="max-w-2xl text-sm leading-relaxed text-white/55">
-          An optional AI-powered reasoning layer that helps you break out of repetitive listening
-          by expressing your current mood and activity, then discovering new music with transparent
-          explanations and 30-second previews.
+          Break out of repetitive listening using AI recommendations based on your mood, activity,
+          and favorite artists. Immerse yourself in a journey tailored just for you.
         </p>
 
         <div className="mt-3 flex flex-wrap gap-3">
-          <Link
-            href="/discover"
+          <a
+            href="#discover-form"
             className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-full bg-accent px-7 py-2.5 text-sm font-bold text-black shadow-[0_4px_20px_rgba(29,185,84,0.35)] transition-all duration-150 motion-reduce:transition-none hover:bg-accent-hover hover:shadow-[0_4px_24px_rgba(29,185,84,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a1f14] active:scale-[0.98]"
           >
             Discover with AI
-          </Link>
+          </a>
           <a
             href="https://open.spotify.com"
             target="_blank"

@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { Play, Sparkles, X } from "lucide-react";
+import { DISCOVERY_INSIGHTS, spotifyLinkProps } from "@/lib/mockBrowseContent";
+
+const linkClass =
+  "rounded-sm transition-opacity duration-150 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
 /**
  * Floating Discovery Insights panel (visual / illustrative content only).
@@ -12,6 +16,8 @@ export function DiscoveryInsights() {
   if (!open) {
     return null;
   }
+
+  const { mix, headerImageUrl } = DISCOVERY_INSIGHTS;
 
   return (
     <aside
@@ -27,17 +33,24 @@ export function DiscoveryInsights() {
           type="button"
           onClick={() => setOpen(false)}
           aria-label="Dismiss Discovery Insights"
-          className="inline-flex h-7 w-7 items-center justify-center rounded-full text-white/45 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-white/45 transition-colors duration-150 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
 
       <div className="rounded-lg bg-[#282828] p-3">
-        <div
-          className="mb-3 h-[72px] rounded-md bg-gradient-to-r from-emerald-900/50 to-emerald-700/25"
-          aria-hidden="true"
-        />
+        <a
+          {...spotifyLinkProps(mix.spotifyUrl, `Open ${mix.title} on Spotify`)}
+          className={`mb-3 block overflow-hidden rounded-md ${linkClass}`}
+        >
+          <img
+            src={headerImageUrl}
+            alt=""
+            loading="lazy"
+            className="h-[72px] w-full object-cover"
+          />
+        </a>
         <p className="text-xs italic leading-relaxed text-white/60">
           I noticed you&apos;re exploring deep-house today. Based on your Arctic Monkeys phase, you
           might enjoy this experimental blend...
@@ -45,28 +58,39 @@ export function DiscoveryInsights() {
       </div>
 
       <div className="flex items-center gap-3 rounded-lg bg-[#282828] p-2.5">
-        <div
-          className="h-11 w-11 shrink-0 rounded bg-gradient-to-br from-violet-600 to-indigo-900"
-          aria-hidden="true"
-        />
+        <a
+          {...spotifyLinkProps(mix.spotifyUrl, `Open artwork for ${mix.title} on Spotify`)}
+          className={`shrink-0 ${linkClass}`}
+        >
+          <img
+            src={mix.imageUrl}
+            alt=""
+            width={44}
+            height={44}
+            loading="lazy"
+            className="h-11 w-11 rounded object-cover"
+          />
+        </a>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <p className="truncate text-xs font-semibold text-white">Rhythmic Flow Mix</p>
+            <a
+              {...spotifyLinkProps(mix.spotifyUrl, `Open ${mix.title} on Spotify`)}
+              className={`truncate text-xs font-semibold text-white hover:underline ${linkClass}`}
+            >
+              {mix.title}
+            </a>
             <span className="shrink-0 rounded bg-accent/20 px-1 py-px text-[9px] font-bold uppercase text-accent">
               AI
             </span>
           </div>
-          <p className="truncate text-[11px] text-white/45">Recommended for your current mood</p>
+          <p className="truncate text-[11px] text-white/45">{mix.subtitle}</p>
         </div>
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          aria-label="Play Rhythmic Flow Mix"
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-black"
+        <a
+          {...spotifyLinkProps(mix.spotifyUrl, `Play ${mix.title} on Spotify`)}
+          className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-black transition-transform duration-150 hover:scale-105 ${linkClass}`}
         >
           <Play className="h-3.5 w-3.5 fill-black" aria-hidden="true" />
-        </button>
+        </a>
       </div>
     </aside>
   );
