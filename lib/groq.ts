@@ -15,7 +15,12 @@ import type {
   RankingResult,
   RerankInput,
 } from '@/types';
-import { buildPlanningPromptV1, buildRankingPromptV1, type ChatPrompt } from '@/lib/prompts';
+import {
+  buildPlanningPromptV1,
+  buildRankingPromptV1,
+  buildRerankingPromptV1,
+  type ChatPrompt,
+} from '@/lib/prompts';
 import { normalizeExplanation } from '@/lib/ranking';
 import { clampScore } from '@/lib/utils';
 import { devLog } from '@/lib/log';
@@ -306,11 +311,42 @@ export async function rankCandidates(input: RankingInput): Promise<RankingResult
 }
 
 /**
- * Feedback re-ranking. Re-ranks the remaining cached candidate pool using
- * session feedback, excluding already-shown and skipped tracks.
+ * Groq Call 3 — Feedback re-ranking. Re-ranks the remaining cached candidate pool
+ * using session feedback, excluding already-shown and skipped tracks. Retries once
+ * on parse/schema failure.
  */
 export async function rerankCandidates(input: RerankInput): Promise<RankingResult> {
-  throw new Error(
-    `groq.rerankCandidates not implemented (Phase 11). Candidates: ${input.candidates.length}.`,
-  );
+  if (input.candidates.length === 0) {
+    return { recommendations: [] };
+  }
+
+  const prompt = buildRerankingPromptV1(input);
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const startedAt = Date.now();
+      const content = await callGroqJson(RANKING_MODEL, prompt, RANKING_MAX_TOKENS);
+      const ranking = parseRankingResult(content);
+      const elapsedMs = Date.now() - startedAt;
+
+      if (ranking) {
+        devLog(
+          `Re-ranking OK (attempt=${attempt}, ${elapsedMs}ms, count=${ranking.recommendations.length}).`,
+        );
+        return ranking;
+      }
+
+      devLog(`Re-ranking output invalid (attempt=${attempt}); retrying once.`);
+      lastError = new GroqError('GROQ_UNAVAILABLE', 'Invalid re-ranking output.');
+    } catch (error) {
+      lastError = error;
+      devLog(`Re-ranking call failed (attempt=${attempt}).`);
+      break;
+    }
+  }
+
+  throw lastError instanceof GroqError
+    ? lastError
+    : new GroqError('GROQ_UNAVAILABLE', 'Re-ranking failed after retries.');
 }

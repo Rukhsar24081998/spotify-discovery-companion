@@ -2,7 +2,7 @@
 
 Live tracker for the Spotify Discovery Companion build. Tick each phase only when its **Definition of Done** (in the phase document) is fully met and the phase has passed review.
 
-**Overall completion: 77% (10 / 13 phases complete)**
+**Overall completion: 85% (11 / 13 phases complete)**
 
 > Update rule: each completed phase = ~7.7%. Recompute `completed / 13` after every merge.
 
@@ -20,7 +20,7 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 - [x] **08 — AI Recommendation Engine** — Groq Call 2: ranking + Discovery Match + explanations
 - [x] **09 — Recommendation Cards** — Results screen + actions, wired to `/api/discover`
 - [x] **10 — Preview Player** — Inline 30-sec preview + unavailable degradation
-- [ ] **11 — Feedback Loop** — FeedbackDialog + `/api/feedback`
+- [x] **11 — Feedback Loop** — FeedbackDialog + `/api/feedback`
 - [ ] **12 — Polish** — Edge/empty/error states, a11y, responsiveness
 - [ ] **13 — Deployment** — Vercel production deploy + verification
 
@@ -95,10 +95,10 @@ Live tracker for the Spotify Discovery Companion build. Tick each phase only whe
 - [x] Single-active-player behavior (`activePreviewTrackId` in `DiscoveryFlow`)
 
 ### 11 — Feedback Loop
-- [ ] FeedbackDialog after 2 skips (optional/dismissible)
-- [ ] `/api/feedback` re-rank, no new search unless exhausted
-- [ ] Client-held session state replayed correctly
-- [ ] Shown/skipped excluded
+- [x] FeedbackDialog after 2 skips (optional/dismissible) — triggers after skip animation; single-select reason; submit guard
+- [x] `/api/feedback` re-rank, no new search unless exhausted — Groq Call 3 only (no planning); context-only broadening on exhaustion
+- [x] Client-held session state replayed correctly — `sessionRef` for pool/ids; React state for dialog/loading only
+- [x] Shown/skipped excluded
 
 ### 12 — Polish
 - [ ] Limited / no-results / service-error states
