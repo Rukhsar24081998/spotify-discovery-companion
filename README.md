@@ -33,13 +33,26 @@ Copy `.env.example` to `.env.local` and fill in the values. `.env.local` is git-
 cp .env.example .env.local
 ```
 
-| Variable | Purpose |
-| --- | --- |
-| `GROQ_API_KEY` | Groq API key (server-side only) |
-| `SPOTIFY_CLIENT_ID` | Spotify app client ID |
-| `SPOTIFY_CLIENT_SECRET` | Spotify app client secret |
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `GROQ_API_KEY` | Yes | Groq API key (server-side only) |
+| `SPOTIFY_CLIENT_ID` | Yes | Spotify app client ID |
+| `SPOTIFY_CLIENT_SECRET` | Yes | Spotify app client secret |
+| `SPOTIFY_MARKET` | No | Optional ISO market code for Spotify search (e.g. `US`, `IN`) |
 
 All keys are read server-side only and are never exposed to the browser.
+
+### Deploy on Vercel
+
+1. Import the GitHub repository in the [Vercel dashboard](https://vercel.com/new).
+2. Framework preset: **Next.js** (auto-detected).
+3. Add the **required** environment variables above under **Project → Settings → Environment Variables** for **Production** (and Preview if you want PR deploys).
+4. Deploy. Vercel runs `npm install` and `npm run build` automatically.
+5. After deploy, verify the live URL: Home → Discover → recommendations → preview → feedback → Continue in Spotify.
+
+Do not commit secrets. Use the same variable names as `.env.example`.
+
+**Repository:** https://github.com/Rukhsar24081998/spotify-discovery-companion
 
 ### Scripts
 
@@ -70,4 +83,4 @@ public/               # Static assets
 
 ## Implementation Status
 
-Built phase by phase per `phase-wise-implementation-plan/`. Current: **Phase 01 — Project Setup** (deployable skeleton).
+Built phase by phase per `phase-wise-implementation-plan/`. **Phases 01–12 complete** — ready for Vercel deployment (Phase 13).
