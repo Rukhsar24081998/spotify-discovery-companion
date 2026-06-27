@@ -9,8 +9,8 @@ interface PageContainerProps {
  */
 export function PageContainer({ children }: PageContainerProps) {
   return (
-    <main className="flex-1 overflow-y-auto bg-[#121212] pb-28">
-      <div className="mx-auto max-w-[1400px] px-6 pb-6 pt-1">{children}</div>
+    <main className="flex-1 overflow-y-auto bg-[#121212] pb-20">
+      <div className="w-full px-4 pb-5 pt-0 sm:px-6">{children}</div>
     </main>
   );
 }
