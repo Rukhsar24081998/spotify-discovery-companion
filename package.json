@@ -11,7 +11,8 @@
     "start": "next start",
     "lint": "next lint",
     "measure:preview": "node scripts/measure-preview.ts",
-    "measure:plan": "node scripts/measure-plan.ts"
+    "measure:plan": "node scripts/measure-plan.ts",
+    "seed:browse-urls": "npx tsx scripts/seed-browse-spotify-urls.ts"
   },
   "dependencies": {
     "lucide-react": "^1.21.0",

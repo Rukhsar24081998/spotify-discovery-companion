@@ -49,9 +49,14 @@ const config: Config = {
           "0%": { opacity: "0", transform: "translateY(4px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        "ai-wave": {
+          "0%, 100%": { transform: "scaleY(0.35)" },
+          "50%": { transform: "scaleY(1)" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.3s ease-out both",
+        "ai-wave": "ai-wave 1.2s ease-in-out infinite",
       },
     },
   },

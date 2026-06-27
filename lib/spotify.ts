@@ -7,8 +7,15 @@
  * SpotifyError + ErrorCode so routes can respond consistently.
  */
 
-import type { ArtistSuggestion, CandidateTrack, ErrorCode } from "@/types";
+import type {
+  ArtistSuggestion,
+  BrowseSearchItem,
+  CandidateTrack,
+  ErrorCode,
+  SpotifyBrowseSearchResponse,
+} from "@/types";
 import { devLog } from "@/lib/log";
+import { spotifyExternalUrl } from "@/lib/spotifyLinks";
 
 const TOKEN_URL = "https://accounts.spotify.com/api/token";
 const API_BASE = "https://api.spotify.com/v1";
@@ -49,6 +56,21 @@ interface SpotifyArtistObject {
   id: string;
   name: string;
   images?: SpotifyImage[];
+  external_urls?: { spotify?: string };
+}
+
+interface SpotifyAlbumObject {
+  id: string;
+  name: string;
+  artists: { name: string }[];
+  images?: SpotifyImage[];
+  external_urls?: { spotify?: string };
+}
+
+interface SpotifyMultiSearchResponse {
+  tracks?: { items: SpotifyTrackObject[] };
+  artists?: { items: SpotifyArtistObject[] };
+  albums?: { items: SpotifyAlbumObject[] };
 }
 
 interface SpotifyTrackObject {
@@ -223,7 +245,7 @@ function isUsableTrack(track: SpotifyTrackObject): boolean {
   if (track.is_playable === false) {
     return false;
   }
-  if (!track.external_urls?.spotify) {
+  if (!spotifyExternalUrl(track)) {
     return false;
   }
   return true;
@@ -236,7 +258,7 @@ function toCandidateTrack(track: SpotifyTrackObject): CandidateTrack {
     artist: track.artists.map((artist) => artist.name).join(", "),
     albumArt: track.album.images?.[0]?.url ?? "",
     previewUrl: track.preview_url ?? null,
-    spotifyUrl: track.external_urls?.spotify ?? "",
+    spotifyUrl: spotifyExternalUrl(track) ?? "",
     popularity: track.popularity ?? 0,
   };
 }
@@ -282,6 +304,101 @@ export async function searchTracks(query: string, limit = 20): Promise<Candidate
   return candidates;
 }
 
+function pickImageUrl(images?: SpotifyImage[]): string {
+  if (!images?.length) {
+    return "";
+  }
+  const sorted = [...images].sort(
+    (a, b) => (b.width ?? 0) - (a.width ?? 0),
+  );
+  return sorted[0]?.url ?? "";
+}
+
+function toBrowseTrack(track: SpotifyTrackObject): BrowseSearchItem | null {
+  const spotifyUrl = spotifyExternalUrl(track);
+  if (!track.id || !spotifyUrl) {
+    return null;
+  }
+  return {
+    id: track.id,
+    type: "track",
+    title: track.name,
+    subtitle: track.artists.map((artist) => artist.name).join(", "),
+    imageUrl: pickImageUrl(track.album.images),
+    spotifyUrl,
+  };
+}
+
+function toBrowseArtist(artist: SpotifyArtistObject): BrowseSearchItem | null {
+  const spotifyUrl = spotifyExternalUrl(artist);
+  if (!artist.id || !spotifyUrl) {
+    return null;
+  }
+  return {
+    id: artist.id,
+    type: "artist",
+    title: artist.name,
+    subtitle: "Artist",
+    imageUrl: pickImageUrl(artist.images),
+    spotifyUrl,
+  };
+}
+
+function toBrowseAlbum(album: SpotifyAlbumObject): BrowseSearchItem | null {
+  const spotifyUrl = spotifyExternalUrl(album);
+  if (!album.id || !spotifyUrl) {
+    return null;
+  }
+  return {
+    id: album.id,
+    type: "album",
+    title: album.name,
+    subtitle: album.artists.map((artist) => artist.name).join(", "),
+    imageUrl: pickImageUrl(album.images),
+    spotifyUrl,
+  };
+}
+
+/**
+ * Search Spotify for tracks, artists, and albums (top-bar browse search).
+ * Uses a single multi-type search request; omits items without external_urls.spotify.
+ */
+export async function searchBrowse(
+  query: string,
+  limit = 5,
+): Promise<SpotifyBrowseSearchResponse> {
+  const q = query.trim();
+  if (!q) {
+    return { tracks: [], artists: [], albums: [] };
+  }
+
+  devLog(`Browse search... query="${q}" limit=${limit} per type`);
+
+  const json = (await spotifyGet("search", {
+    q,
+    type: "track,artist,album",
+    limit: String(limit),
+    ...marketParam(),
+  })) as SpotifyMultiSearchResponse;
+
+  const tracks = (json.tracks?.items ?? [])
+    .map(toBrowseTrack)
+    .filter((item): item is BrowseSearchItem => item !== null)
+    .slice(0, limit);
+
+  const artists = (json.artists?.items ?? [])
+    .map(toBrowseArtist)
+    .filter((item): item is BrowseSearchItem => item !== null)
+    .slice(0, limit);
+
+  const albums = (json.albums?.items ?? [])
+    .map(toBrowseAlbum)
+    .filter((item): item is BrowseSearchItem => item !== null)
+    .slice(0, limit);
+
+  return { tracks, artists, albums };
+}
+
 /** Search Spotify for artists to back the ArtistSearch autocomplete. */
 export async function searchArtists(query: string, limit = 5): Promise<ArtistSuggestion[]> {
   const q = query.trim();
@@ -302,4 +419,22 @@ export async function searchArtists(query: string, limit = 5): Promise<ArtistSug
     name: artist.name,
     image: artist.images?.[0]?.url ?? "",
   }));
+}
+
+function extractSpotifyTrackId(spotifyUrl: string): string | null {
+  const match = spotifyUrl.match(/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/);
+  return match?.[1] ?? null;
+}
+
+/** Fetch preview_url for a Spotify track link, if the API provides one. */
+export async function getTrackPreviewUrl(spotifyTrackUrl: string): Promise<string | null> {
+  const trackId = extractSpotifyTrackId(spotifyTrackUrl);
+  if (!trackId) {
+    return null;
+  }
+
+  devLog(`Fetching preview_url for track id=${trackId}`);
+
+  const json = (await spotifyGet(`tracks/${trackId}`, marketParam())) as SpotifyTrackObject;
+  return json.preview_url ?? null;
 }

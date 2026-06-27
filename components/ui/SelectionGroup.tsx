@@ -4,6 +4,8 @@ import { PillButton } from "@/components/ui/PillButton";
 interface SelectionGroupProps<T extends string> {
   /** Visible prompt, e.g. "How are you feeling?". */
   legend: string;
+  /** Stable id for the section heading (accessibility). */
+  headingId?: string;
   /** Options rendered in the given (canonical) order. */
   options: readonly T[];
   value: T | null;
@@ -17,11 +19,13 @@ interface SelectionGroupProps<T extends string> {
  */
 export function SelectionGroup<T extends string>({
   legend,
+  headingId,
   options,
   value,
   onChange,
 }: SelectionGroupProps<T>) {
-  const headingId = useId();
+  const generatedHeadingId = useId();
+  const resolvedHeadingId = headingId ?? generatedHeadingId;
   const groupId = useId();
 
   function focusOption(option: T) {
@@ -49,15 +53,19 @@ export function SelectionGroup<T extends string>({
   }
 
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-title font-semibold text-white">
+    <section aria-labelledby={resolvedHeadingId} className="flex flex-col gap-3">
+      <h2
+        id={resolvedHeadingId}
+        tabIndex={-1}
+        className="rounded-sm text-title font-semibold text-white outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      >
         {legend}
       </h2>
       <div
         role="group"
-        aria-labelledby={headingId}
+        aria-labelledby={resolvedHeadingId}
         onKeyDown={handleGroupKeyDown}
-        className="flex flex-wrap gap-2"
+        className="flex flex-wrap gap-2 rounded-xl p-1"
       >
         {options.map((option) => (
           <PillButton

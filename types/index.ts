@@ -194,6 +194,26 @@ export interface SpotifySearchResponse {
   artists: ArtistSuggestion[];
 }
 
+/** A single row in the top-bar browse search dropdown. */
+export interface BrowseSearchItem {
+  id: string;
+  type: 'track' | 'artist' | 'album';
+  title: string;
+  subtitle: string;
+  imageUrl: string;
+  spotifyUrl: string;
+}
+
+export interface SpotifyBrowseSearchResponse {
+  tracks: BrowseSearchItem[];
+  artists: BrowseSearchItem[];
+  albums: BrowseSearchItem[];
+}
+
+export const MIN_BROWSE_SEARCH_LENGTH = 2;
+export const BROWSE_SEARCH_LIMIT = 5;
+export const BROWSE_SEARCH_DEBOUNCE_MS = 300;
+
 // ---------------------------------------------------------------------------
 // Error envelope (see tech-stack.md → API Routes)
 // ---------------------------------------------------------------------------

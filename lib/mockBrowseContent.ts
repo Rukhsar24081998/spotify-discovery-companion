@@ -1,6 +1,16 @@
-/** Curated static browse content — artwork from Spotify CDN (display only). */
+/** Curated static browse content — local artwork assets in /public/images (display only). */
+
+import {
+  CATALOG_ALBUMS,
+  CATALOG_TRACKS,
+  catalogAlbumLink,
+} from "@/lib/mockBrowseCatalog";
+import { resolveSpotifyLink } from "@/lib/spotifyLinks";
 
 export const SPOTIFY_WEB_URL = "https://open.spotify.com";
+
+/** Local fallback when artwork fails to load. */
+export const ARTWORK_PLACEHOLDER_SRC = "/images/placeholders/music-placeholder.png";
 
 /** Tooltip copy for unavailable UI controls. */
 export const COMING_SOON_TITLE = "Coming Soon";
@@ -9,10 +19,12 @@ export interface RecentlyPlayedItem {
   id: string;
   title: string;
   artist: string;
+  album: string;
+  releaseYear?: number;
   imageUrl: string;
-  albumSpotifyUrl: string;
-  trackSpotifyUrl: string;
-  artistSpotifyUrl: string;
+  albumSpotifyUrl: string | null;
+  trackSpotifyUrl: string | null;
+  artistSpotifyUrl: string | null;
 }
 
 export interface PlaylistGridItem {
@@ -20,99 +32,246 @@ export interface PlaylistGridItem {
   title: string;
   subtitle: string;
   imageUrl: string;
-  spotifyUrl: string;
+  spotifyUrl: string | null;
+}
+
+function trackById(id: string) {
+  const track = CATALOG_TRACKS.find((item) => item.id === id);
+  if (!track) {
+    throw new Error(`Unknown track id: ${id}`);
+  }
+  const album = CATALOG_ALBUMS.find((item) => item.id === track.albumId);
+  if (!album) {
+    throw new Error(`Unknown album id: ${track.albumId}`);
+  }
+  return { track, album };
 }
 
 export const RECENTLY_PLAYED: RecentlyPlayedItem[] = [
-  {
-    id: "arctic-monkeys",
-    title: "There'd Better Be A Mirror Ball",
-    artist: "Arctic Monkeys",
-    imageUrl: "https://i.scdn.co/image/ab67616d0000b273a9a9dd642458b961f425f43a",
-    albumSpotifyUrl: "https://open.spotify.com/album/6aWHXZYEB4D44aN5p7m7TY",
-    trackSpotifyUrl: "https://open.spotify.com/track/0bxPAgFIaA6AORRcnQAo2B",
-    artistSpotifyUrl: "https://open.spotify.com/artist/7LnBartcCS0KyzYTSqPW1z",
-  },
-  {
-    id: "sza",
-    title: "Kill Bill",
-    artist: "SZA",
-    imageUrl: "https://i.scdn.co/image/ab67616d0000b273472345d2c49609e58a68cb67",
-    albumSpotifyUrl: "https://open.spotify.com/album/7kGUGd4bH0aEan6X0aTNDT",
-    trackSpotifyUrl: "https://open.spotify.com/track/3koAf8faKRWeYMY8eOprDs",
-    artistSpotifyUrl: "https://open.spotify.com/artist/4tZwfgrHOc4mvBSaReKMtI",
-  },
-  {
-    id: "taylor-swift",
-    title: "Anti-Hero",
-    artist: "Taylor Swift",
-    imageUrl: "https://i.scdn.co/image/ab67616d0000b273bb54dde68cd841e0b2457b64",
-    albumSpotifyUrl: "https://open.spotify.com/album/3lS8HiHfQzMgRfWoYiiWDQ",
-    trackSpotifyUrl: "https://open.spotify.com/track/0V3wPSX9gBnXRH8aiw9rKT",
-    artistSpotifyUrl: "https://open.spotify.com/artist/06HL4z0CvFAxyc27GXpf02",
-  },
-  {
-    id: "the-weeknd",
-    title: "Take My Breath",
-    artist: "The Weeknd",
-    imageUrl: "https://i.scdn.co/image/ab67616d0000b2738863bc011a1d64a6b586028b",
-    albumSpotifyUrl: "https://open.spotify.com/album/4yP0GrkcTNSZK1UBnotIqG",
-    trackSpotifyUrl: "https://open.spotify.com/track/64mR2as9XSUoG9H8O4YqKT",
-    artistSpotifyUrl: "https://open.spotify.com/artist/1Xyo4u8uXC1ZmMpatF05PJ",
-  },
+  (() => {
+    const { track, album } = trackById("mirror-ball");
+    return {
+      id: "arctic-monkeys",
+      title: track.title,
+      artist: album.artist,
+      album: album.title,
+      releaseYear: album.releaseYear,
+      imageUrl: track.imageUrl,
+      albumSpotifyUrl: album.albumSpotifyUrl,
+      trackSpotifyUrl: track.trackSpotifyUrl,
+      artistSpotifyUrl: album.artistSpotifyUrl,
+    };
+  })(),
+  (() => {
+    const { track, album } = trackById("kill-bill");
+    return {
+      id: "sza",
+      title: track.title,
+      artist: album.artist,
+      album: album.title,
+      releaseYear: album.releaseYear,
+      imageUrl: track.imageUrl,
+      albumSpotifyUrl: album.albumSpotifyUrl,
+      trackSpotifyUrl: track.trackSpotifyUrl,
+      artistSpotifyUrl: album.artistSpotifyUrl,
+    };
+  })(),
+  (() => {
+    const { track, album } = trackById("anti-hero");
+    return {
+      id: "taylor-swift",
+      title: track.title,
+      artist: album.artist,
+      album: album.title,
+      releaseYear: album.releaseYear,
+      imageUrl: track.imageUrl,
+      albumSpotifyUrl: album.albumSpotifyUrl,
+      trackSpotifyUrl: track.trackSpotifyUrl,
+      artistSpotifyUrl: album.artistSpotifyUrl,
+    };
+  })(),
+  (() => {
+    const { track, album } = trackById("take-my-breath");
+    return {
+      id: "the-weeknd",
+      title: track.title,
+      artist: album.artist,
+      album: album.title,
+      releaseYear: album.releaseYear,
+      imageUrl: track.imageUrl,
+      albumSpotifyUrl: album.albumSpotifyUrl,
+      trackSpotifyUrl: track.trackSpotifyUrl,
+      artistSpotifyUrl: album.artistSpotifyUrl,
+    };
+  })(),
 ];
 
-export const MADE_FOR_YOU: PlaylistGridItem[] = [
-  {
-    id: "discover-weekly",
-    title: "Discover Weekly",
-    subtitle: "Your weekly mixtape of fresh music",
-    imageUrl: "https://i.scdn.co/image/ab67706f00000002ca5a7517154680eb16916993",
-    spotifyUrl: "https://open.spotify.com/playlist/37i9dQZEVXcJZyENOWUFo7",
-  },
-  {
-    id: "release-radar",
-    title: "Release Radar",
-    subtitle: "Catch all the latest music from artists you follow",
-    imageUrl: "https://i.scdn.co/image/ab67706f0000000292495013656be0532a0e23a4",
-    spotifyUrl: "https://open.spotify.com/playlist/37i9dQZEVXcKMsF84U3Km2",
-  },
-  {
-    id: "daily-mix-1",
-    title: "Daily Mix 1",
-    subtitle: "Arctic Monkeys, The Strokes and more",
-    imageUrl: "https://i.scdn.co/image/ab67616d0000b273a9a9dd642458b961f425f43a",
-    spotifyUrl: "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M",
-  },
-  {
-    id: "daily-mix-2",
-    title: "Daily Mix 2",
-    subtitle: "Daft Punk, Justice and more",
-    imageUrl: "https://i.scdn.co/image/ab67616d0000b2734718ecc2e9d8759595a0ef7e",
-    spotifyUrl: "https://open.spotify.com/playlist/37i9dQZF1DX4dyzvuaRJ0n",
-  },
-];
+/** Personalized Spotify mixes cannot use static playlist IDs — links disabled in UI. */
+export { MADE_FOR_YOU_SHELF as MADE_FOR_YOU } from "@/lib/browseSections";
+
+export {
+  CATALOG_ALBUMS,
+  CATALOG_ARTISTS,
+  CATALOG_PLAYLISTS,
+  CATALOG_TRACKS,
+} from "@/lib/mockBrowseCatalog";
+
+const blindingLights = trackById("blinding-lights");
 
 export const NOW_PLAYING = {
-  title: "Blinding Lights",
-  artist: "The Weeknd",
-  imageUrl: "https://i.scdn.co/image/ab67616d0000b2738863bc011a1d64a6b586028b",
-  trackSpotifyUrl: "https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b",
-  artistSpotifyUrl: "https://open.spotify.com/artist/1Xyo4u8uXC1ZmMpatF05PJ",
+  title: blindingLights.track.title,
+  artist: blindingLights.album.artist,
+  album: blindingLights.album.title,
+  releaseYear: blindingLights.album.releaseYear,
+  imageUrl: blindingLights.album.imageUrl,
+  trackSpotifyUrl: blindingLights.track.trackSpotifyUrl,
+  artistSpotifyUrl: blindingLights.album.artistSpotifyUrl,
+  albumSpotifyUrl: blindingLights.album.albumSpotifyUrl,
 };
 
+/** Track payload for the bottom player bar. */
+export interface BottomPlayerTrack {
+  id: string;
+  title: string;
+  artist: string;
+  album: string;
+  releaseYear?: number;
+  imageUrl: string;
+  durationSeconds: number;
+  previewUrl: string | null;
+  trackSpotifyUrl: string;
+  artistSpotifyUrl: string;
+  albumSpotifyUrl: string | null;
+}
+
+export type MockPlayerTrack = Omit<BottomPlayerTrack, "previewUrl">;
+
+function toBottomPlayerTrack(
+  trackId: string,
+  previewUrl: string | null = null,
+): BottomPlayerTrack {
+  const { track, album } = trackById(trackId);
+  return {
+    id: track.id,
+    title: track.title,
+    artist: album.artist,
+    album: album.title,
+    releaseYear: album.releaseYear,
+    imageUrl: album.imageUrl,
+    durationSeconds: track.durationSeconds,
+    previewUrl,
+    trackSpotifyUrl: track.trackSpotifyUrl,
+    artistSpotifyUrl: album.artistSpotifyUrl,
+    albumSpotifyUrl: album.albumSpotifyUrl,
+  };
+}
+
+function toMockPlayerTrack(trackId: string): MockPlayerTrack {
+  const { id, title, artist, album, releaseYear, imageUrl, durationSeconds, trackSpotifyUrl, artistSpotifyUrl, albumSpotifyUrl } =
+    toBottomPlayerTrack(trackId);
+  return {
+    id,
+    title,
+    artist,
+    album,
+    releaseYear,
+    imageUrl,
+    durationSeconds,
+    trackSpotifyUrl,
+    artistSpotifyUrl,
+    albumSpotifyUrl,
+  };
+}
+
+/** Build a bottom-player payload from a catalog track id. */
+export function bottomPlayerTrackFromTrackId(trackId: string): BottomPlayerTrack {
+  return toBottomPlayerTrack(trackId, null);
+}
+
+/** Build a bottom-player payload from a catalog album id (no preview). */
+export function bottomPlayerTrackFromAlbumId(albumId: string): BottomPlayerTrack {
+  const album = CATALOG_ALBUMS.find((item) => item.id === albumId);
+  if (!album) {
+    throw new Error(`Unknown album id: ${albumId}`);
+  }
+  return {
+    id: album.id,
+    title: album.title,
+    artist: album.artist,
+    album: album.title,
+    releaseYear: album.releaseYear,
+    imageUrl: album.imageUrl,
+    durationSeconds: 0,
+    previewUrl: null,
+    trackSpotifyUrl: album.albumSpotifyUrl,
+    artistSpotifyUrl: album.artistSpotifyUrl,
+    albumSpotifyUrl: album.albumSpotifyUrl,
+  };
+}
+
+/** Build a bottom-player payload from a playlist shelf item (no preview). */
+export function bottomPlayerTrackFromPlaylist(
+  playlist: { id: string; title: string; subtitle: string; imageUrl: string; spotifyUrl: string },
+): BottomPlayerTrack {
+  return {
+    id: playlist.id,
+    title: playlist.title,
+    artist: playlist.subtitle,
+    album: playlist.title,
+    imageUrl: playlist.imageUrl,
+    durationSeconds: 0,
+    previewUrl: null,
+    trackSpotifyUrl: playlist.spotifyUrl,
+    artistSpotifyUrl: playlist.spotifyUrl,
+    albumSpotifyUrl: null,
+  };
+}
+
+export const MOCK_PLAYER_PLAYLIST: MockPlayerTrack[] = [
+  toMockPlayerTrack("blinding-lights"),
+  toMockPlayerTrack("take-my-breath"),
+  toMockPlayerTrack("kill-bill"),
+  toMockPlayerTrack("anti-hero"),
+  toMockPlayerTrack("mirror-ball"),
+];
+
+export const INITIAL_BOTTOM_PLAYER_QUEUE: BottomPlayerTrack[] =
+  MOCK_PLAYER_PLAYLIST.map((track) => ({
+    ...track,
+    previewUrl: null,
+  }));
+
+const amCatalogAlbum = CATALOG_ALBUMS.find((album) => album.id === "am");
+
 export const DISCOVERY_INSIGHTS = {
-  headerImageUrl: "https://i.scdn.co/image/ab67616d0000b2734718ecc2e9d8759595a0ef7e",
+  recentListening: ["Arctic Monkeys", "Indie Rock", "The Strokes"],
+  matchScore: 94,
+  cardExplanation:
+    "You've been spinning Arctic Monkeys, Tame Impala, and indie rock — AM is the natural next album in your rotation.",
+  pitch:
+    "Same late-night swagger as Favourite Worst Nightmare and Currents, with a sharper groove you haven't worn out yet.",
+  recommendationReason: "Recommended because it matches your indie and alt-rock listening streak.",
+  reasons: [
+    "Same indie rock energy",
+    "Familiar Arctic Monkeys vocals",
+    "Pairs with Currents and After Hours",
+    "Album you haven't finished yet",
+  ],
   mix: {
-    title: "Rhythmic Flow Mix",
-    subtitle: "Recommended for your current mood",
-    imageUrl: "https://i.scdn.co/image/ab67616d0000b2738863bc011a1d64a6b586028b",
-    spotifyUrl: "https://open.spotify.com/playlist/37i9dQZF1DX4dyzvuaRJ0n",
+    title: "AM",
+    subtitle: "Arctic Monkeys · 2013",
+    imageUrl: amCatalogAlbum?.imageUrl ?? "/images/albums/am.jpg",
+    spotifyUrl: catalogAlbumLink("am"),
   },
+  fallbackTrack: null as {
+    title: string;
+    imageUrl: string;
+    spotifyUrl: string;
+  } | null,
 };
 
 const spotifyLinkClass =
-  "rounded-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+  "rounded-sm transition-opacity duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
 /** Shared anchor props for opening Spotify in a new tab. */
 export function spotifyLinkProps(href: string, label: string) {
@@ -123,4 +282,12 @@ export function spotifyLinkProps(href: string, label: string) {
     className: spotifyLinkClass,
     "aria-label": label,
   };
+}
+
+/** Resolve a Spotify destination for recommendation / AI cards. */
+export function resolveMusicSpotifyLink(
+  apiUrl: string | null | undefined,
+  searchName: string,
+): string {
+  return resolveSpotifyLink(apiUrl, searchName);
 }

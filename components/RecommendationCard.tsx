@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Heart, Music2, SkipForward, Star } from "lucide-react";
 import type { Recommendation } from "@/types";
 import { CardShell } from "@/components/ui/CardShell";
+import { ArtworkImage } from "@/components/ui/ArtworkImage";
 import { PreviewPlayer } from "@/components/PreviewPlayer";
 
 export interface RecommendationCardProps {
@@ -51,10 +52,9 @@ export function RecommendationCard({
           />
         )}
         {hasArtwork ? (
-          <img
+          <ArtworkImage
             src={recommendation.albumArt}
             alt={`Album artwork for ${recommendation.title} by ${recommendation.artist}`}
-            loading="lazy"
             onLoad={() => setArtworkLoaded(true)}
             className={`h-full w-full object-cover transition-opacity duration-300 motion-reduce:transition-none ${
               artworkLoaded ? "opacity-100" : "opacity-0"

@@ -1,64 +1,110 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import type { Activity, Mood } from "@/types";
+import {
+  DISCOVERY_PIPELINE_STAGES,
+  PIPELINE_MAX_STAGE_WHILE_PENDING,
+} from "@/lib/discoveryPipeline";
+import { AiAnalyzerPanel } from "@/components/discover/AiAnalyzerPanel";
+import { DiscoverFormPreview } from "@/components/discover/DiscoverFormPreview";
+import { DiscoverProcessingFooter } from "@/components/discover/DiscoverProcessingFooter";
+import { ProcessingPipeline } from "@/components/discover/ProcessingPipeline";
 import { Heading } from "@/components/ui/Heading";
 
 interface LoadingStateProps {
-  /** Called once after every reasoning step has completed. */
+  /** Called once every pipeline stage has completed visually. */
   onComplete?: () => void;
-  /** When set, the reasoning steps are replaced by a friendly error state. */
+  /** When set, the processing UI is replaced by a friendly error state. */
   error?: string | null;
-  /** Retry handler used alongside `error` (wired in later phases). */
+  /** Retry handler used alongside `error`. */
   onRetry?: () => void;
-  /** Per-step dwell time; primarily for testing. */
-  stepDurationMs?: number;
+  /** True once /api/discover returns — drives final pipeline stages. */
+  fetchComplete?: boolean;
+  mood?: Mood | null;
+  activity?: Activity | null;
+  favoriteArtists?: string[];
+  /** Interval for early-stage visualization while the API is in flight. */
+  pendingStageIntervalMs?: number;
+  /** Interval for completing final stages once the API returns. */
+  finalizeStageIntervalMs?: number;
 }
-
-const STEPS = [
-  "Understanding your mood",
-  "Understanding your activity",
-  "Building a discovery strategy",
-  "Searching Spotify",
-  "Ranking recommendations",
-  "Preparing your discovery",
-] as const;
-
-const DEFAULT_STEP_DURATION_MS = 800;
 
 const SERVICE_ERROR_HEADING = "Something went wrong while discovering music.";
 const SERVICE_ERROR_BODY = "Please try again in a moment.";
 
 /**
- * Screen 3 — the AI reasoning screen. Communicates progress as a checking-off
- * step list rather than a spinner (ui-guidelines.md -> AI Processing Screen).
+ * Screen 3 — AI processing experience (design-reference/03-ai-processing.png).
+ * Visualizes the real /api/discover pipeline; transition timing is controlled
+ * by DiscoveryFlow (fetchComplete + existing min-loading guard).
  */
 export function LoadingState({
   onComplete,
   error = null,
   onRetry,
-  stepDurationMs = DEFAULT_STEP_DURATION_MS,
+  fetchComplete = false,
+  mood = null,
+  activity = null,
+  favoriteArtists = [],
+  pendingStageIntervalMs = 480,
+  finalizeStageIntervalMs = 90,
 }: LoadingStateProps) {
-  const [completed, setCompleted] = useState(0);
-  const isDone = completed >= STEPS.length;
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [completedCount, setCompletedCount] = useState(0);
+  const finalizeStartedRef = useRef(false);
+
+  const stages = DISCOVERY_PIPELINE_STAGES;
+  const allComplete = completedCount >= stages.length;
 
   useEffect(() => {
-    if (error || isDone) {
+    if (error || fetchComplete) {
       return;
     }
-    const timer = setTimeout(() => setCompleted((count) => count + 1), stepDurationMs);
-    return () => clearTimeout(timer);
-  }, [completed, error, isDone, stepDurationMs]);
+
+    const timer = setInterval(() => {
+      setActiveIndex((current) => {
+        if (current >= PIPELINE_MAX_STAGE_WHILE_PENDING) {
+          return current;
+        }
+        const next = current + 1;
+        setCompletedCount(next);
+        return next;
+      });
+    }, pendingStageIntervalMs);
+
+    return () => clearInterval(timer);
+  }, [error, fetchComplete, pendingStageIntervalMs]);
 
   useEffect(() => {
-    if (!error && isDone) {
+    if (error || !fetchComplete || finalizeStartedRef.current) {
+      return;
+    }
+    finalizeStartedRef.current = true;
+
+    const timer = setInterval(() => {
+      setCompletedCount((count) => {
+        if (count >= stages.length) {
+          clearInterval(timer);
+          return count;
+        }
+        const next = count + 1;
+        setActiveIndex(Math.min(next, stages.length - 1));
+        return next;
+      });
+    }, finalizeStageIntervalMs);
+
+    return () => clearInterval(timer);
+  }, [error, fetchComplete, finalizeStageIntervalMs, stages.length]);
+
+  useEffect(() => {
+    if (!error && allComplete) {
       onComplete?.();
     }
-  }, [error, isDone, onComplete]);
+  }, [error, allComplete, onComplete]);
 
   if (error) {
     return (
-      <div role="alert" className="flex flex-col items-start gap-4">
+      <div role="alert" className="flex flex-col items-start gap-4 animate-fade-in">
         <Heading level={2}>{SERVICE_ERROR_HEADING}</Heading>
         <p className="text-body text-white/70">{SERVICE_ERROR_BODY}</p>
         {onRetry && (
@@ -74,46 +120,34 @@ export function LoadingState({
     );
   }
 
-  const currentStep = isDone ? STEPS[STEPS.length - 1] : STEPS[completed];
+  const currentStage = stages[Math.min(activeIndex, stages.length - 1)] ?? stages[0];
 
   return (
-    <div className="flex flex-col gap-6">
-      <Heading level={2}>AI Discovery Companion</Heading>
+    <div className="relative mb-10 animate-fade-in">
+      <div className="lg:pr-[340px]">
+        <DiscoverFormPreview
+          mood={mood}
+          activity={activity}
+          favoriteArtists={favoriteArtists}
+        />
+        <ProcessingPipeline
+          stages={stages}
+          activeIndex={activeIndex}
+          completedCount={completedCount}
+        />
+      </div>
 
-      <ol className="flex flex-col gap-3">
-        {STEPS.map((step, index) => {
-          const done = index < completed;
-          const active = index === completed && !isDone;
-          return (
-            <li key={step} className="flex items-center gap-3">
-              <span
-                aria-hidden="true"
-                className="flex h-6 w-6 shrink-0 items-center justify-center"
-              >
-                {done ? (
-                  <Check className="h-5 w-5 text-accent" />
-                ) : active ? (
-                  <span className="h-2.5 w-2.5 rounded-full bg-accent animate-pulse" />
-                ) : (
-                  <span className="h-2.5 w-2.5 rounded-full border border-white/25" />
-                )}
-              </span>
-              <span
-                className={
-                  done || active
-                    ? "text-body text-white"
-                    : "text-body text-white/50"
-                }
-              >
-                {step}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
+      <AiAnalyzerPanel
+        stages={stages}
+        activeIndex={activeIndex}
+        completedCount={completedCount}
+        message={currentStage.message}
+      />
 
-      <p aria-live="polite" className="sr-only">
-        {isDone ? "Preparing your discovery" : currentStep}
+      <DiscoverProcessingFooter />
+
+      <p className="sr-only" aria-live="polite">
+        {currentStage.label}: {currentStage.message}
       </p>
     </div>
   );

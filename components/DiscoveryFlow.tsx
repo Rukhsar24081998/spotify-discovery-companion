@@ -382,7 +382,16 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
   }
 
   if (phase === "loading") {
-    return <LoadingState error={loadingError} onRetry={handleRetry} />;
+    return (
+      <LoadingState
+        error={loadingError}
+        onRetry={handleRetry}
+        fetchComplete={fetchComplete}
+        mood={mood}
+        activity={activity}
+        favoriteArtists={favoriteArtists}
+      />
+    );
   }
 
   if (phase === "results" && discoverRequest && meta) {
@@ -477,7 +486,7 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
   }
 
   return (
-    <div id="discover-form" className="mb-10 flex scroll-mt-6 flex-col gap-8">
+    <div id="discover-form" className="mb-10 flex scroll-mt-28 flex-col gap-8">
       <Heading level={1}>Let&apos;s find something you&apos;ll love.</Heading>
 
       <MoodSelector value={mood} onChange={setMood} />
