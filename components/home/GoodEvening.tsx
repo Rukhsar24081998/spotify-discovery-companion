@@ -1,18 +1,55 @@
-import { Play } from "lucide-react";
+"use client";
+
 import { ArtworkImage } from "@/components/ui/ArtworkImage";
+import { useNowSelected, openSpotifyUrl, type NowSelectedItem } from "@/components/layout/BottomPlayer";
+import { CATALOG_ALBUMS } from "@/lib/mockBrowseCatalog";
 import { GOOD_EVENING_SHORTCUTS } from "@/lib/browseSections";
-import { spotifyLinkProps } from "@/lib/mockBrowseContent";
+import type { ShortcutItem } from "@/lib/mockBrowseCatalog";
 
-const linkClass =
-  "rounded-sm transition-opacity duration-150 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+const selectableClass =
+  "cursor-pointer rounded-md transition-all duration-200 hover:bg-[#3e3e3e] hover:shadow-[0_8px_24px_rgba(0,0,0,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
-const playButtonClass =
-  "pointer-events-auto relative z-20 mr-3 flex h-10 w-10 translate-y-1 scale-90 items-center justify-center rounded-full bg-accent text-black opacity-0 shadow-[0_8px_20px_rgba(0,0,0,0.55)] transition-all duration-200 group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 focus-visible:translate-y-0 focus-visible:scale-100 focus-visible:opacity-100";
+function shortcutToNowSelected(item: ShortcutItem): NowSelectedItem {
+  const isPlaylist = item.spotifyUrl.includes("/search/");
+
+  if (isPlaylist) {
+    return {
+      id: item.id,
+      title: item.label,
+      type: "Playlist",
+      imageUrl: item.imageUrl,
+      spotifyUrl: item.spotifyUrl,
+    };
+  }
+
+  const albumId = item.id.replace(/^shortcut-/, "");
+  const album = CATALOG_ALBUMS.find((entry) => entry.id === albumId);
+
+  return {
+    id: item.id,
+    title: item.label,
+    artist: album?.artist,
+    type: "Album",
+    imageUrl: item.imageUrl,
+    spotifyUrl: item.spotifyUrl,
+  };
+}
+
+function handleShortcutSelect(
+  item: ShortcutItem,
+  selectItem: (item: NowSelectedItem) => void,
+) {
+  const selected = shortcutToNowSelected(item);
+  selectItem(selected);
+  openSpotifyUrl(selected.spotifyUrl);
+}
 
 /**
  * "Good Evening" — Spotify-style horizontal shortcut tiles.
  */
 export function GoodEvening() {
+  const { selectItem } = useNowSelected();
+
   return (
     <section aria-labelledby="good-evening-heading" className="mb-3">
       <h2
@@ -26,15 +63,17 @@ export function GoodEvening() {
         {GOOD_EVENING_SHORTCUTS.map((item) => (
           <article
             key={item.id}
-            className="group relative flex h-14 cursor-pointer items-center overflow-hidden rounded-md bg-[#282828] shadow-[0_2px_8px_rgba(0,0,0,0.35)] transition-all duration-200 hover:bg-[#3e3e3e] hover:shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
+            role="button"
+            tabIndex={0}
+            onClick={() => handleShortcutSelect(item, selectItem)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                handleShortcutSelect(item, selectItem);
+              }
+            }}
+            className={`group relative flex h-14 items-center overflow-hidden bg-[#282828] shadow-[0_2px_8px_rgba(0,0,0,0.35)] ${selectableClass}`}
           >
-            <a
-              {...spotifyLinkProps(item.spotifyUrl, `Open ${item.label} on Spotify`)}
-              className={`absolute inset-0 z-0 ${linkClass}`}
-              tabIndex={-1}
-              aria-hidden="true"
-            />
-
             <div className="relative z-10 h-14 w-14 shrink-0 overflow-hidden shadow-[2px_0_8px_rgba(0,0,0,0.35)]">
               <ArtworkImage
                 src={item.imageUrl}
@@ -43,20 +82,9 @@ export function GoodEvening() {
               />
             </div>
 
-            <a
-              {...spotifyLinkProps(item.spotifyUrl, `Open ${item.label} on Spotify`)}
-              className={`relative z-10 min-w-0 flex-1 truncate px-4 text-sm font-bold text-white hover:underline ${linkClass}`}
-            >
+            <p className="relative z-10 min-w-0 flex-1 truncate px-4 text-sm font-bold text-white">
               {item.label}
-            </a>
-
-            <a
-              {...spotifyLinkProps(item.spotifyUrl, `Play ${item.label} on Spotify`)}
-              aria-label={`Play ${item.label} on Spotify`}
-              className={playButtonClass}
-            >
-              <Play className="h-4 w-4 fill-black pl-0.5" aria-hidden="true" />
-            </a>
+            </p>
           </article>
         ))}
       </div>

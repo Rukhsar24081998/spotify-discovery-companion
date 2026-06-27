@@ -1,6 +1,13 @@
-import { Play } from "lucide-react";
+"use client";
+
+import type { KeyboardEvent } from "react";
 import { ArtworkImage } from "@/components/ui/ArtworkImage";
-import { COMING_SOON_TITLE, spotifyLinkProps } from "@/lib/mockBrowseContent";
+import {
+  nowSelectedFromGridItem,
+  openSpotifyUrl,
+  useNowSelected,
+} from "@/components/layout/BottomPlayer";
+import { COMING_SOON_TITLE } from "@/lib/mockBrowseContent";
 
 export interface MusicGridItem {
   id: string;
@@ -20,60 +27,20 @@ interface MusicGridProps {
   showAll?: boolean;
 }
 
-const cardLinkClass =
-  "rounded-sm transition-opacity duration-150 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
-
 const disabledCardClass = "cursor-default";
+
+const selectableCardClass =
+  "cursor-pointer hover:-translate-y-1 hover:bg-[#282828] hover:shadow-[0_12px_32px_rgba(0,0,0,0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
 const gridItemWidthClass =
   "w-[calc(50%-0.5rem)] sm:w-[calc(33.333%-0.667rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.8rem)]";
 
-const playButtonClass =
-  "pointer-events-auto absolute bottom-2 right-2 z-20 flex h-12 w-12 translate-y-1 scale-90 items-center justify-center rounded-full bg-accent text-black opacity-0 shadow-[0_8px_20px_rgba(0,0,0,0.55)] transition-all duration-200 group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:translate-y-0 focus-visible:scale-100";
-
-function PlayLink({
-  spotifyUrl,
-  title,
-  className,
-}: {
-  spotifyUrl: string;
-  title: string;
-  className: string;
-}) {
-  return (
-    <a
-      {...spotifyLinkProps(spotifyUrl, `Play ${title} on Spotify`)}
-      aria-label={`Play ${title} on Spotify`}
-      className={className}
-    >
-      <Play className="h-5 w-5 fill-black pl-0.5" aria-hidden="true" />
-    </a>
-  );
-}
-
-function CardText({
-  item,
-  linked,
-  spotifyUrl,
-}: {
-  item: MusicGridItem;
-  linked: boolean;
-  spotifyUrl: string | null;
-}) {
+function CardText({ item }: { item: MusicGridItem }) {
   const hasTrackMeta = Boolean(item.artist || item.album);
 
   return (
     <div className="relative z-10 space-y-0.5">
-      {linked && spotifyUrl ? (
-        <a
-          {...spotifyLinkProps(spotifyUrl, `Open ${item.title} on Spotify`)}
-          className={`block truncate text-[15px] font-bold leading-tight text-white hover:underline ${cardLinkClass}`}
-        >
-          {item.title}
-        </a>
-      ) : (
-        <p className="truncate text-[15px] font-bold leading-tight text-white">{item.title}</p>
-      )}
+      <p className="truncate text-[15px] font-bold leading-tight text-white">{item.title}</p>
 
       {hasTrackMeta ? (
         <>
@@ -94,105 +61,84 @@ function CardText({
   );
 }
 
-function GridCard({ item }: { item: MusicGridItem }) {
+function useSelectGridItem(item: MusicGridItem) {
+  const { selectItem } = useNowSelected();
   const spotifyUrl = item.spotifyUrl;
   const linked = spotifyUrl !== null;
+
+  const handleSelect = () => {
+    if (!linked || !spotifyUrl) {
+      return;
+    }
+    selectItem(nowSelectedFromGridItem(item, spotifyUrl));
+    openSpotifyUrl(spotifyUrl);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleSelect();
+    }
+  };
+
+  return { linked, handleSelect, handleKeyDown };
+}
+
+function GridCard({ item }: { item: MusicGridItem }) {
+  const { linked, handleSelect, handleKeyDown } = useSelectGridItem(item);
 
   return (
     <article
       title={linked ? undefined : COMING_SOON_TITLE}
+      role={linked ? "button" : undefined}
+      tabIndex={linked ? 0 : -1}
+      onClick={linked ? handleSelect : undefined}
+      onKeyDown={linked ? handleKeyDown : undefined}
       className={`group relative ${gridItemWidthClass} rounded-lg bg-[#181818] p-3.5 text-left shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition-all duration-200 ${
         linked
-          ? "cursor-pointer hover:-translate-y-1 hover:bg-[#282828] hover:shadow-[0_12px_32px_rgba(0,0,0,0.55)]"
+          ? selectableCardClass
           : `${disabledCardClass} hover:-translate-y-0.5 hover:bg-[#222222] hover:shadow-[0_8px_24px_rgba(0,0,0,0.45)]`
       }`}
     >
-      {linked && spotifyUrl && (
-        <a
-          {...spotifyLinkProps(spotifyUrl, `Open ${item.title} on Spotify`)}
-          className={`absolute inset-0 z-0 rounded-lg ${cardLinkClass}`}
-          tabIndex={-1}
-          aria-hidden="true"
-        />
-      )}
-
       <div className="relative z-10 mb-3 aspect-square w-full overflow-hidden rounded-md shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
-        {linked && spotifyUrl ? (
-          <a
-            {...spotifyLinkProps(spotifyUrl, `Open artwork for ${item.title} on Spotify`)}
-            className={`block h-full w-full ${cardLinkClass}`}
-          >
-            <ArtworkImage
-              src={item.imageUrl}
-              alt=""
-              className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.05]"
-            />
-          </a>
-        ) : (
-          <ArtworkImage
-            src={item.imageUrl}
-            alt=""
-            className="h-full w-full object-cover"
-          />
-        )}
-        {linked && spotifyUrl && (
-          <PlayLink spotifyUrl={spotifyUrl} title={item.title} className={playButtonClass} />
-        )}
+        <ArtworkImage
+          src={item.imageUrl}
+          alt=""
+          className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.05]"
+        />
       </div>
 
-      <CardText item={item} linked={linked} spotifyUrl={spotifyUrl} />
+      <CardText item={item} />
     </article>
   );
 }
 
 function PairCard({ item }: { item: MusicGridItem }) {
-  const spotifyUrl = item.spotifyUrl;
-  const linked = spotifyUrl !== null;
+  const { linked, handleSelect, handleKeyDown } = useSelectGridItem(item);
 
   return (
     <article
       title={linked ? undefined : COMING_SOON_TITLE}
+      role={linked ? "button" : undefined}
+      tabIndex={linked ? 0 : -1}
+      onClick={linked ? handleSelect : undefined}
+      onKeyDown={linked ? handleKeyDown : undefined}
       className={`group relative flex w-full flex-col overflow-hidden rounded-lg bg-[#181818] p-3.5 text-left shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition-all duration-200 sm:flex-row sm:items-center sm:gap-4 ${
         linked
-          ? "cursor-pointer hover:-translate-y-1 hover:bg-[#282828] hover:shadow-[0_12px_32px_rgba(0,0,0,0.55)]"
+          ? selectableCardClass
           : `${disabledCardClass} hover:-translate-y-0.5 hover:bg-[#222222]`
       }`}
     >
-      {linked && spotifyUrl && (
-        <a
-          {...spotifyLinkProps(spotifyUrl, `Open ${item.title} on Spotify`)}
-          className={`absolute inset-0 z-0 rounded-lg ${cardLinkClass}`}
-          tabIndex={-1}
-          aria-hidden="true"
-        />
-      )}
-
       <div className="relative z-10 mb-3 aspect-square w-full shrink-0 overflow-hidden rounded-md shadow-[0_4px_20px_rgba(0,0,0,0.5)] sm:mb-0 sm:h-28 sm:w-28">
-        {linked && spotifyUrl ? (
-          <a
-            {...spotifyLinkProps(spotifyUrl, `Open artwork for ${item.title} on Spotify`)}
-            className={`block h-full w-full ${cardLinkClass}`}
-          >
-            <ArtworkImage
-              src={item.imageUrl}
-              alt=""
-              className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.05]"
-            />
-          </a>
-        ) : (
-          <ArtworkImage
-            src={item.imageUrl}
-            alt=""
-            className="h-full w-full object-cover"
-          />
-        )}
-        {linked && spotifyUrl && (
-          <PlayLink spotifyUrl={spotifyUrl} title={item.title} className={playButtonClass} />
-        )}
+        <ArtworkImage
+          src={item.imageUrl}
+          alt=""
+          className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.05]"
+        />
       </div>
 
       <div className="relative z-10 min-w-0 flex-1">
-        <CardText item={item} linked={linked} spotifyUrl={spotifyUrl} />
+        <CardText item={item} />
       </div>
     </article>
   );
