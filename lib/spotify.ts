@@ -67,10 +67,19 @@ interface SpotifyAlbumObject {
   external_urls?: { spotify?: string };
 }
 
+interface SpotifyPlaylistObject {
+  id: string;
+  name: string;
+  owner?: { display_name?: string };
+  images?: SpotifyImage[];
+  external_urls?: { spotify?: string };
+}
+
 interface SpotifyMultiSearchResponse {
   tracks?: { items: SpotifyTrackObject[] };
   artists?: { items: SpotifyArtistObject[] };
   albums?: { items: SpotifyAlbumObject[] };
+  playlists?: { items: SpotifyPlaylistObject[] };
 }
 
 interface SpotifyTrackObject {
@@ -359,8 +368,54 @@ function toBrowseAlbum(album: SpotifyAlbumObject): BrowseSearchItem | null {
   };
 }
 
+function toBrowsePlaylist(playlist: SpotifyPlaylistObject): BrowseSearchItem | null {
+  const spotifyUrl = spotifyExternalUrl(playlist);
+  if (!playlist.id || !spotifyUrl) {
+    return null;
+  }
+  return {
+    id: playlist.id,
+    type: "playlist",
+    title: playlist.name,
+    subtitle: playlist.owner?.display_name
+      ? `Playlist · ${playlist.owner.display_name}`
+      : "Playlist",
+    imageUrl: pickImageUrl(playlist.images),
+    spotifyUrl,
+  };
+}
+
+/** Pick the single best match for the Spotify-style "Top Result" row. */
+function pickTopBrowseResult(
+  query: string,
+  tracks: BrowseSearchItem[],
+  artists: BrowseSearchItem[],
+  albums: BrowseSearchItem[],
+  playlists: BrowseSearchItem[],
+): BrowseSearchItem | null {
+  const needle = query.trim().toLowerCase();
+  if (!needle) {
+    return null;
+  }
+
+  const candidates = [...tracks, ...artists, ...albums, ...playlists];
+  const exact = candidates.find((item) => item.title.toLowerCase() === needle);
+  if (exact) {
+    return exact;
+  }
+
+  const prefix = candidates.find((item) =>
+    item.title.toLowerCase().startsWith(needle),
+  );
+  if (prefix) {
+    return prefix;
+  }
+
+  return tracks[0] ?? artists[0] ?? albums[0] ?? playlists[0] ?? null;
+}
+
 /**
- * Search Spotify for tracks, artists, and albums (top-bar browse search).
+ * Search Spotify for tracks, artists, albums, and playlists (top-bar browse search).
  * Uses a single multi-type search request; omits items without external_urls.spotify.
  */
 export async function searchBrowse(
@@ -369,34 +424,60 @@ export async function searchBrowse(
 ): Promise<SpotifyBrowseSearchResponse> {
   const q = query.trim();
   if (!q) {
-    return { tracks: [], artists: [], albums: [] };
+    return {
+      topResult: null,
+      tracks: [],
+      artists: [],
+      albums: [],
+      playlists: [],
+    };
   }
 
   devLog(`Browse search... query="${q}" limit=${limit} per type`);
 
   const json = (await spotifyGet("search", {
     q,
-    type: "track,artist,album",
+    type: "track,artist,album,playlist",
     limit: String(limit),
     ...marketParam(),
   })) as SpotifyMultiSearchResponse;
 
-  const tracks = (json.tracks?.items ?? [])
+  const trackItems = (json.tracks?.items ?? []).filter(
+    (item): item is SpotifyTrackObject => item !== null,
+  );
+  const artistItems = (json.artists?.items ?? []).filter(
+    (item): item is SpotifyArtistObject => item !== null,
+  );
+  const albumItems = (json.albums?.items ?? []).filter(
+    (item): item is SpotifyAlbumObject => item !== null,
+  );
+  const playlistItems = (json.playlists?.items ?? []).filter(
+    (item): item is SpotifyPlaylistObject => item !== null,
+  );
+
+  const tracks = trackItems
     .map(toBrowseTrack)
     .filter((item): item is BrowseSearchItem => item !== null)
     .slice(0, limit);
 
-  const artists = (json.artists?.items ?? [])
+  const artists = artistItems
     .map(toBrowseArtist)
     .filter((item): item is BrowseSearchItem => item !== null)
     .slice(0, limit);
 
-  const albums = (json.albums?.items ?? [])
+  const albums = albumItems
     .map(toBrowseAlbum)
     .filter((item): item is BrowseSearchItem => item !== null)
     .slice(0, limit);
 
-  return { tracks, artists, albums };
+  const playlists = playlistItems
+    .map(toBrowsePlaylist)
+    .filter((item): item is BrowseSearchItem => item !== null)
+    .slice(0, limit);
+
+  const topResult = pickTopBrowseResult(q, tracks, artists, albums, playlists);
+
+  return { topResult, tracks, artists, albums, playlists };
 }
 
 /** Search Spotify for artists to back the ArtistSearch autocomplete. */

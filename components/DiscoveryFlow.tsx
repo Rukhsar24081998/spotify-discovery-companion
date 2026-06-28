@@ -14,7 +14,22 @@ import type {
   Mood,
   Recommendation,
 } from "@/types";
+import { ACTIVITIES, MOODS } from "@/types";
+import { consumeDiscoverMoodPrefill } from "@/lib/discoverMoodPrefill";
+import { isMood } from "@/lib/utils";
+import { useMyLibrary } from "@/components/layout/MyLibraryContext";
 import { Heading } from "@/components/ui/Heading";
+import {
+  INITIAL_VISIBLE_RECOMMENDATIONS,
+  LOAD_MORE_RECOMMENDATIONS_BATCH,
+  RECOMMENDATION_STAGGER_MS,
+} from "@/components/discover/resultsConstants";
+import { DiscoverySummaryCard } from "@/components/discover/DiscoverySummaryCard";
+import { formatRecommendationCount } from "@/components/discover/discoverySummary";
+import { RecommendationSuccessBanner } from "@/components/discover/RecommendationSuccessBanner";
+import { DiscoverEmptyState } from "@/components/discover/DiscoverEmptyState";
+import { DiscoveryHero } from "@/components/discover/DiscoveryHero";
+import { getDiscoverHelperMessage } from "@/components/discover/discoveryInputOptions";
 import { MoodSelector } from "@/components/MoodSelector";
 import { ActivitySelector } from "@/components/ActivitySelector";
 import { ArtistSearch } from "@/components/ArtistSearch";
@@ -59,10 +74,6 @@ function buildDiscoverRequest(
   return favoriteArtists.length > 0
     ? { mood, activity, favoriteArtists }
     : { mood, activity };
-}
-
-function buildResultsSubtitle(mood: Mood, activity: Activity): string {
-  return `AI-curated for your ${mood.toLowerCase()} mood while ${activity.toLowerCase()}.`;
 }
 
 async function fetchDiscover(request: DiscoverRequest): Promise<DiscoverResponse> {
@@ -122,6 +133,7 @@ async function fetchFeedback(request: FeedbackRequest): Promise<FeedbackResponse
  * and renders recommendation cards.
  */
 export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
+  const { isSaved, toggleSave } = useMyLibrary();
   const [mood, setMood] = useState<Mood | null>(null);
   const [activity, setActivity] = useState<Activity | null>(null);
   const [favoriteArtists, setFavoriteArtists] = useState<string[]>([]);
@@ -130,7 +142,6 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
   const [discoverRequest, setDiscoverRequest] = useState<DiscoverRequest | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [meta, setMeta] = useState<DiscoveryMeta | null>(null);
-  const [savedTrackIds, setSavedTrackIds] = useState<Set<string>>(new Set());
   const [exitingTrackIds, setExitingTrackIds] = useState<Set<string>>(new Set());
   const [activePreviewTrackId, setActivePreviewTrackId] = useState<string | null>(null);
 
@@ -144,6 +155,9 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [fetchComplete, setFetchComplete] = useState(false);
   const [minLoadingComplete, setMinLoadingComplete] = useState(false);
+  const [visibleRecommendationCount, setVisibleRecommendationCount] = useState(
+    INITIAL_VISIBLE_RECOMMENDATIONS,
+  );
 
   const pendingResponseRef = useRef<DiscoverResponse | null>(null);
   const pendingRequestRef = useRef<DiscoverRequest | null>(null);
@@ -151,19 +165,31 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
   const skipTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const sessionRef = useRef<DiscoverySession | null>(null);
   const feedbackSubmittingRef = useRef(false);
+  const surpriseMeLockRef = useRef(false);
 
   const canSubmit = mood !== null && activity !== null;
+  const isDiscovering = phase === "loading";
+
+  useEffect(() => {
+    const prefill = consumeDiscoverMoodPrefill();
+    if (isMood(prefill)) {
+      setMood(prefill);
+    }
+  }, []);
 
   useEffect(() => {
     onPhaseChange?.(phase);
   }, [phase, onPhaseChange]);
+
+  useEffect(() => {
+    setVisibleRecommendationCount(INITIAL_VISIBLE_RECOMMENDATIONS);
+  }, [recommendations]);
 
   const applyDiscoverResponse = useCallback(
     (response: DiscoverResponse, request: DiscoverRequest) => {
       setDiscoverRequest(request);
       setRecommendations(response.recommendations);
       setMeta(response.meta);
-      setSavedTrackIds(new Set());
       setExitingTrackIds(new Set());
       setActivePreviewTrackId(null);
       setFeedbackDialogOpen(false);
@@ -242,12 +268,28 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
     };
   }, []);
 
-  function handleSubmit() {
-    const request = buildDiscoverRequest(mood, activity, favoriteArtists);
+  useEffect(() => {
+    if (phase === "input") {
+      surpriseMeLockRef.current = false;
+    }
+  }, [phase]);
+
+  function startDiscover(selectedMood: Mood, selectedActivity: Activity) {
+    setMood(selectedMood);
+    setActivity(selectedActivity);
+
+    const request = buildDiscoverRequest(selectedMood, selectedActivity, favoriteArtists);
     if (!request) {
       return;
     }
     void runDiscover(request);
+  }
+
+  function handleSubmit() {
+    if (!mood || !activity) {
+      return;
+    }
+    startDiscover(mood, activity);
   }
 
   function handleRetry() {
@@ -271,16 +313,8 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
     setActivePreviewTrackId((current) => (current === trackId ? null : current));
   }
 
-  function handleSave(trackId: string) {
-    setSavedTrackIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(trackId)) {
-        next.delete(trackId);
-      } else {
-        next.add(trackId);
-      }
-      return next;
-    });
+  function handleSave(recommendation: Recommendation) {
+    toggleSave(recommendation);
   }
 
   function handleSkip(trackId: string) {
@@ -399,11 +433,14 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
 
     if (recommendations.length === 0) {
       return (
-        <div className="flex flex-col gap-6 animate-fade-in">
-          <div className="flex flex-col gap-2">
-            <Heading level={1}>Your Discoveries</Heading>
-            <p className="text-body text-white/70">
-              We couldn&apos;t find a great match right now.
+        <div className="flex flex-col gap-8 animate-fade-in">
+          <div className="flex flex-col gap-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-accent">
+              Your discoveries
+            </p>
+            <Heading level={1}>No matches yet</Heading>
+            <p className="max-w-xl text-body leading-relaxed text-white/60">
+              We couldn&apos;t find a great match right now. Try adjusting your mood or activity.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -426,42 +463,76 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
       );
     }
 
+    const visibleRecommendations = recommendations.slice(0, visibleRecommendationCount);
+    const hasMoreRecommendations = recommendations.length > visibleRecommendationCount;
+
     return (
       <>
-        <div className="flex flex-col gap-8 animate-fade-in">
-          <div className="flex flex-col gap-2">
-            <Heading level={1}>Your Discoveries</Heading>
-            <p className="text-body text-white/60">
-              {buildResultsSubtitle(resultMood, resultActivity)}
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2.5 animate-fade-in">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-accent">
+              Your discoveries
+            </p>
+            <Heading level={1}>Here&apos;s what we found</Heading>
+            <p className="text-support text-white/50">
+              {formatRecommendationCount(recommendations.length)}
             </p>
           </div>
+
+          <DiscoverySummaryCard
+            mood={resultMood}
+            activity={resultActivity}
+            recommendationCount={recommendations.length}
+          />
 
           {meta.limited && (
             <div
               role="status"
-              className="flex flex-col gap-1 rounded-xl border border-white/10 bg-surface px-4 py-3 text-body text-white/70"
+              className="flex flex-col gap-1 rounded-xl border border-white/10 bg-surface px-4 py-3 text-body text-white/70 animate-fade-in"
             >
               <p>We found a few matches for now.</p>
               <p>Try adjusting your mood or activity for more.</p>
             </div>
           )}
 
-          <ul className="flex flex-col gap-6" aria-label="Recommendations">
-            {recommendations.map((recommendation) => (
-              <li key={recommendation.trackId} className="list-none">
+          <RecommendationSuccessBanner count={recommendations.length} />
+
+          <ul className="flex flex-col gap-4" aria-label="Recommendations">
+            {visibleRecommendations.map((recommendation, index) => (
+              <li
+                key={recommendation.trackId}
+                className="list-none motion-reduce:animate-none animate-fade-in"
+                style={{ animationDelay: `${index * RECOMMENDATION_STAGGER_MS}ms` }}
+              >
                 <RecommendationCard
                   recommendation={recommendation}
-                  isSaved={savedTrackIds.has(recommendation.trackId)}
+                  isSaved={isSaved(recommendation.trackId)}
                   isExiting={exitingTrackIds.has(recommendation.trackId)}
                   isPreviewActive={activePreviewTrackId === recommendation.trackId}
                   onPreviewActivate={handlePreviewActivate}
                   onPreviewDeactivate={handlePreviewDeactivate}
-                  onSave={() => handleSave(recommendation.trackId)}
+                  onSave={() => handleSave(recommendation)}
                   onSkip={() => handleSkip(recommendation.trackId)}
+                  contextMood={resultMood}
+                  contextActivity={resultActivity}
                 />
               </li>
             ))}
           </ul>
+
+          {hasMoreRecommendations && (
+            <button
+              type="button"
+              onClick={() =>
+                setVisibleRecommendationCount((count) =>
+                  Math.min(count + LOAD_MORE_RECOMMENDATIONS_BATCH, recommendations.length),
+                )
+              }
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full border border-white/20 px-6 py-3 text-support font-semibold text-white transition-colors duration-150 motion-reduce:transition-none hover:border-white/40 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto sm:self-center"
+            >
+              Load More Recommendations
+            </button>
+          )}
 
           <button
             type="button"
@@ -485,24 +556,78 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
     );
   }
 
+  function scrollToForm() {
+    document.getElementById("discover-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function handleSurpriseMe() {
+    if (surpriseMeLockRef.current || isDiscovering) {
+      return;
+    }
+
+    surpriseMeLockRef.current = true;
+
+    const randomMood = MOODS[Math.floor(Math.random() * MOODS.length)];
+    const randomActivity = ACTIVITIES[Math.floor(Math.random() * ACTIVITIES.length)];
+    startDiscover(randomMood, randomActivity);
+  }
+
   return (
-    <div id="discover-form" className="mb-10 flex scroll-mt-28 flex-col gap-8">
-      <Heading level={1}>Let&apos;s find something you&apos;ll love.</Heading>
+    <div className="mb-10 flex flex-col gap-10 lg:gap-12">
+      <DiscoveryHero onGetStarted={scrollToForm} />
 
-      <MoodSelector value={mood} onChange={setMood} />
-      <hr className="border-white/10" />
-      <ActivitySelector value={activity} onChange={setActivity} />
-      <hr className="border-white/10" />
-      <ArtistSearch value={favoriteArtists} onChange={setFavoriteArtists} />
+      <div id="discover-form" className="scroll-mt-28 flex flex-col gap-8 sm:gap-10">
+        <MoodSelector value={mood} onChange={setMood} />
 
-      <button
-        type="button"
-        onClick={handleSubmit}
-        disabled={!canSubmit}
-        className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full bg-accent px-6 py-3.5 text-body font-semibold text-black transition-colors duration-150 motion-reduce:transition-none hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-white/50 sm:w-auto sm:self-start"
-      >
-        Discover Music
-      </button>
+        <ActivitySelector value={activity} onChange={setActivity} />
+
+        <section
+          aria-labelledby="artists-step-label"
+          className="rounded-xl border border-white/[0.06] bg-[#181818]/80 p-5 sm:p-6"
+        >
+          <p
+            id="artists-step-label"
+            className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-accent"
+          >
+            Step 3 of 3 — Optional
+          </p>
+          <p className="mb-4 text-sm text-white/50">
+            Adding artists is optional but helps personalize your recommendations even more.
+          </p>
+          <ArtistSearch value={favoriteArtists} onChange={setFavoriteArtists} />
+        </section>
+
+        <div className="flex flex-col gap-2.5 pt-1">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!canSubmit || isDiscovering}
+              className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-accent px-8 py-3.5 text-body font-bold text-black shadow-[0_4px_20px_rgba(29,185,84,0.35)] transition-all duration-200 ease-out motion-reduce:transition-none hover:bg-accent-hover hover:shadow-[0_6px_24px_rgba(29,185,84,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-white/50 disabled:shadow-none sm:w-auto"
+            >
+              Discover Music
+            </button>
+            <button
+              type="button"
+              onClick={handleSurpriseMe}
+              disabled={isDiscovering}
+              aria-busy={isDiscovering}
+              className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full border border-white/25 bg-transparent px-8 py-3.5 text-body font-semibold text-white transition-all duration-200 ease-out motion-reduce:transition-none hover:border-white/40 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/35 sm:w-auto"
+            >
+              ✨ Surprise Me
+            </button>
+          </div>
+          <p className="text-support text-white/45" aria-live="polite">
+            {getDiscoverHelperMessage(mood, activity)}
+          </p>
+        </div>
+      </div>
+
+      <DiscoverEmptyState
+        mood={mood}
+        activity={activity}
+        favoriteArtists={favoriteArtists}
+      />
     </div>
   );
 }

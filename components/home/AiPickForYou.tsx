@@ -2,15 +2,19 @@
 
 import { Sparkles } from "lucide-react";
 import { ArtworkImage } from "@/components/ui/ArtworkImage";
-import { useNowSelected, openSpotifyUrl } from "@/components/layout/BottomPlayer";
+import {
+  homeSelectableCardClass,
+  homeSelectedCardClass,
+  openSpotifyUrl,
+  useNowSelected,
+} from "@/components/layout/BottomPlayer";
 import {
   ARTWORK_PLACEHOLDER_SRC,
   DISCOVERY_INSIGHTS,
   resolveMusicSpotifyLink,
 } from "@/lib/mockBrowseContent";
 
-const selectableClass =
-  "cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:bg-[#282828] hover:shadow-[0_12px_32px_rgba(0,0,0,0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+const AI_PICK_ID = "ai-pick-featured";
 
 function getArtworkUrl(): string {
   return (
@@ -44,7 +48,8 @@ function getTitle(): string {
  * Single premium AI recommendation shelf — integrated homepage section.
  */
 export function AiPickForYou() {
-  const { selectItem } = useNowSelected();
+  const { selectItem, selected } = useNowSelected();
+  const isSelected = selected?.id === AI_PICK_ID;
   const { mix, matchScore, cardExplanation } = DISCOVERY_INSIGHTS;
   if (!mix) {
     return null;
@@ -57,7 +62,7 @@ export function AiPickForYou() {
 
   const handleSelect = () => {
     selectItem({
-      id: "ai-pick-featured",
+      id: AI_PICK_ID,
       title,
       artist,
       type: "Album",
@@ -83,14 +88,15 @@ export function AiPickForYou() {
       <article
         role="button"
         tabIndex={0}
+        aria-pressed={isSelected}
         onClick={handleSelect}
         onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
+          if (event.key === "Enter") {
             event.preventDefault();
             handleSelect();
           }
         }}
-        className={`group relative flex flex-col overflow-hidden rounded-lg bg-[#181818] shadow-[0_2px_10px_rgba(0,0,0,0.35)] sm:flex-row sm:items-stretch ${selectableClass}`}
+        className={`group relative flex flex-col overflow-hidden rounded-lg bg-[#181818] shadow-[0_2px_10px_rgba(0,0,0,0.35)] sm:flex-row sm:items-stretch hover:bg-[#282828] ${homeSelectableCardClass} ${isSelected ? homeSelectedCardClass : ""}`}
       >
         <div className="relative z-10 aspect-square w-full shrink-0 overflow-hidden sm:w-[220px] md:w-[260px] lg:w-[280px]">
           <ArtworkImage

@@ -1,11 +1,18 @@
-import { Bell, User } from "lucide-react";
-import { COMING_SOON_TITLE } from "@/lib/mockBrowseContent";
+"use client";
+
+import { SPOTIFY_PREMIUM_URL } from "@/lib/mockBrowseContent";
+import { NotificationsPopover } from "@/components/layout/NotificationsPopover";
+import { ProfileMenu } from "@/components/layout/ProfileMenu";
 import { SpotifySearch } from "@/components/layout/SpotifySearch";
 
 /**
  * Spotify-inspired top bar with interactive search.
  */
 export function TopNavigation() {
+  function handleUpgradeClick() {
+    window.open(SPOTIFY_PREMIUM_URL, "_blank", "noopener,noreferrer");
+  }
+
   return (
     <header className="flex shrink-0 items-center gap-6 px-6 py-5">
       <SpotifySearch />
@@ -13,33 +20,14 @@ export function TopNavigation() {
       <div className="ml-auto flex shrink-0 items-center gap-2">
         <button
           type="button"
-          disabled
-          aria-disabled="true"
-          title={COMING_SOON_TITLE}
-          className="hidden cursor-not-allowed rounded-full border border-white/15 px-5 py-1.5 text-xs font-bold uppercase tracking-wide text-white/35 sm:inline-flex"
+          onClick={handleUpgradeClick}
+          aria-label="Upgrade to Spotify Premium"
+          className="hidden rounded-full border border-white/15 px-5 py-1.5 text-xs font-bold uppercase tracking-wide text-white/90 transition-colors duration-150 hover:border-white/30 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:inline-flex"
         >
           Upgrade
         </button>
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          title={COMING_SOON_TITLE}
-          aria-label="Notifications"
-          className="inline-flex h-10 w-10 cursor-not-allowed items-center justify-center rounded-full text-white/35"
-        >
-          <Bell className="h-[22px] w-[22px]" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          title={COMING_SOON_TITLE}
-          aria-label="Profile"
-          className="inline-flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-full bg-[#282828] text-white/35"
-        >
-          <User className="h-[18px] w-[18px]" aria-hidden="true" />
-        </button>
+        <NotificationsPopover />
+        <ProfileMenu />
       </div>
     </header>
   );

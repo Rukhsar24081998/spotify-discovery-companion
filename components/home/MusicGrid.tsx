@@ -3,6 +3,8 @@
 import type { KeyboardEvent } from "react";
 import { ArtworkImage } from "@/components/ui/ArtworkImage";
 import {
+  homeSelectableCardClass,
+  homeSelectedCardClass,
   nowSelectedFromGridItem,
   openSpotifyUrl,
   useNowSelected,
@@ -27,10 +29,7 @@ interface MusicGridProps {
   showAll?: boolean;
 }
 
-const disabledCardClass = "cursor-default";
-
-const selectableCardClass =
-  "cursor-pointer hover:-translate-y-1 hover:bg-[#282828] hover:shadow-[0_12px_32px_rgba(0,0,0,0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+const disabledCardClass = "cursor-default transition-all duration-200 ease-out";
 
 const gridItemWidthClass =
   "w-[calc(50%-0.5rem)] sm:w-[calc(33.333%-0.667rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.8rem)]";
@@ -62,9 +61,10 @@ function CardText({ item }: { item: MusicGridItem }) {
 }
 
 function useSelectGridItem(item: MusicGridItem) {
-  const { selectItem } = useNowSelected();
+  const { selectItem, selected } = useNowSelected();
   const spotifyUrl = item.spotifyUrl;
   const linked = spotifyUrl !== null;
+  const isSelected = selected?.id === item.id;
 
   const handleSelect = () => {
     if (!linked || !spotifyUrl) {
@@ -75,17 +75,17 @@ function useSelectGridItem(item: MusicGridItem) {
   };
 
   const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key === "Enter" || event.key === " ") {
+    if (event.key === "Enter") {
       event.preventDefault();
       handleSelect();
     }
   };
 
-  return { linked, handleSelect, handleKeyDown };
+  return { linked, isSelected, handleSelect, handleKeyDown };
 }
 
 function GridCard({ item }: { item: MusicGridItem }) {
-  const { linked, handleSelect, handleKeyDown } = useSelectGridItem(item);
+  const { linked, isSelected, handleSelect, handleKeyDown } = useSelectGridItem(item);
 
   return (
     <article
@@ -94,9 +94,10 @@ function GridCard({ item }: { item: MusicGridItem }) {
       tabIndex={linked ? 0 : -1}
       onClick={linked ? handleSelect : undefined}
       onKeyDown={linked ? handleKeyDown : undefined}
-      className={`group relative ${gridItemWidthClass} rounded-lg bg-[#181818] p-3.5 text-left shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition-all duration-200 ${
+      aria-pressed={linked ? isSelected : undefined}
+      className={`group relative ${gridItemWidthClass} rounded-lg bg-[#181818] p-3.5 text-left shadow-[0_2px_10px_rgba(0,0,0,0.35)] ${
         linked
-          ? selectableCardClass
+          ? `${homeSelectableCardClass} hover:bg-[#282828] ${isSelected ? homeSelectedCardClass : ""}`
           : `${disabledCardClass} hover:-translate-y-0.5 hover:bg-[#222222] hover:shadow-[0_8px_24px_rgba(0,0,0,0.45)]`
       }`}
     >
@@ -114,7 +115,7 @@ function GridCard({ item }: { item: MusicGridItem }) {
 }
 
 function PairCard({ item }: { item: MusicGridItem }) {
-  const { linked, handleSelect, handleKeyDown } = useSelectGridItem(item);
+  const { linked, isSelected, handleSelect, handleKeyDown } = useSelectGridItem(item);
 
   return (
     <article
@@ -123,9 +124,10 @@ function PairCard({ item }: { item: MusicGridItem }) {
       tabIndex={linked ? 0 : -1}
       onClick={linked ? handleSelect : undefined}
       onKeyDown={linked ? handleKeyDown : undefined}
-      className={`group relative flex w-full flex-col overflow-hidden rounded-lg bg-[#181818] p-3.5 text-left shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition-all duration-200 sm:flex-row sm:items-center sm:gap-4 ${
+      aria-pressed={linked ? isSelected : undefined}
+      className={`group relative flex w-full flex-col overflow-hidden rounded-lg bg-[#181818] p-3.5 text-left shadow-[0_2px_10px_rgba(0,0,0,0.35)] sm:flex-row sm:items-center sm:gap-4 ${
         linked
-          ? selectableCardClass
+          ? `${homeSelectableCardClass} hover:bg-[#282828] ${isSelected ? homeSelectedCardClass : ""}`
           : `${disabledCardClass} hover:-translate-y-0.5 hover:bg-[#222222]`
       }`}
     >

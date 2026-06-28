@@ -16,9 +16,11 @@ import { devLog } from "@/lib/log";
 const ARTIST_SUGGESTION_LIMIT = 5;
 
 const EMPTY_BROWSE: SpotifyBrowseSearchResponse = {
+  topResult: null,
   tracks: [],
   artists: [],
   albums: [],
+  playlists: [],
 };
 
 /** GET /api/spotify/search — artist autocomplete or multi-type browse search. */

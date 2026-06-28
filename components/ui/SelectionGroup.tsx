@@ -4,11 +4,15 @@ import { PillButton } from "@/components/ui/PillButton";
 interface SelectionGroupProps<T extends string> {
   /** Visible prompt, e.g. "How are you feeling?". */
   legend: string;
+  /** Supporting copy below the heading. */
+  description?: string;
   /** Stable id for the section heading (accessibility). */
   headingId?: string;
   /** Options rendered in the given (canonical) order. */
   options: readonly T[];
   value: T | null;
+  /** Optional display formatter for chip labels. */
+  formatLabel?: (option: T) => string;
   /** Toggles: selecting a new option switches; re-selecting clears to null. */
   onChange: (value: T | null) => void;
 }
@@ -19,9 +23,11 @@ interface SelectionGroupProps<T extends string> {
  */
 export function SelectionGroup<T extends string>({
   legend,
+  description,
   headingId,
   options,
   value,
+  formatLabel,
   onChange,
 }: SelectionGroupProps<T>) {
   const generatedHeadingId = useId();
@@ -54,18 +60,26 @@ export function SelectionGroup<T extends string>({
 
   return (
     <section aria-labelledby={resolvedHeadingId} className="flex flex-col gap-3">
-      <h2
-        id={resolvedHeadingId}
-        tabIndex={-1}
-        className="rounded-sm text-title font-semibold text-white outline-none focus-visible:ring-2 focus-visible:ring-accent"
-      >
-        {legend}
-      </h2>
+      <div className="space-y-1">
+        <h2
+          id={resolvedHeadingId}
+          tabIndex={-1}
+          className="rounded-sm text-lg font-bold tracking-tight text-white outline-none focus-visible:ring-2 focus-visible:ring-accent sm:text-xl"
+        >
+          {legend}
+        </h2>
+        {description && (
+          <p id={`${resolvedHeadingId}-description`} className="text-sm text-white/50">
+            {description}
+          </p>
+        )}
+      </div>
       <div
         role="group"
         aria-labelledby={resolvedHeadingId}
+        aria-describedby={description ? `${resolvedHeadingId}-description` : undefined}
         onKeyDown={handleGroupKeyDown}
-        className="flex flex-wrap gap-2 rounded-xl p-1"
+        className="flex flex-wrap gap-2.5 sm:gap-3"
       >
         {options.map((option) => (
           <PillButton
@@ -74,7 +88,7 @@ export function SelectionGroup<T extends string>({
             selected={value === option}
             onClick={() => onChange(value === option ? null : option)}
           >
-            {option}
+            {formatLabel ? formatLabel(option) : option}
           </PillButton>
         ))}
       </div>

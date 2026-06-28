@@ -13,48 +13,42 @@ export interface PipelineStage {
 
 export const DISCOVERY_PIPELINE_STAGES: PipelineStage[] = [
   {
-    id: "understand",
-    label: "Understanding your request",
-    message: "Understanding your music preferences...",
+    id: "mood",
+    label: "Analyzing your mood",
+    message: "Analyzing your mood...",
     backendStep: "validateDiscoverInput — context assembly",
   },
   {
-    id: "plan",
-    label: "Generating intelligent Spotify searches",
-    message: "Generating intelligent Spotify searches from your mood and activity...",
+    id: "activity",
+    label: "Understanding activity",
+    message: "Understanding activity...",
     backendStep: "generatePlan — Groq planning call",
   },
   {
     id: "search",
     label: "Searching Spotify",
-    message: "Searching Spotify for strong candidates...",
+    message: "Searching Spotify...",
     backendStep: "searchTracks — Spotify Web API",
   },
   {
-    id: "collect",
-    label: "Collecting candidate tracks",
-    message: "Collecting and deduplicating candidate tracks...",
-    backendStep: "dedupeByTrackId + broadenSearchQuery fallback",
-  },
-  {
     id: "rank",
-    label: "AI reasoning and ranking",
-    message: "Analyzing musical patterns...",
+    label: "Ranking candidates",
+    message: "Ranking candidates...",
     backendStep: "rankCandidates — Groq ranking call",
   },
   {
-    id: "compose",
-    label: "Building personalized recommendations",
-    message: "Ranking recommendations using AI...",
+    id: "explain",
+    label: "Generating explanations",
+    message: "Generating explanations...",
     backendStep: "reconcileRanking + composeRecommendations",
   },
   {
-    id: "finalize",
-    label: "Finalizing results",
-    message: "Preparing your personalized discovery...",
+    id: "prepare",
+    label: "Preparing recommendations",
+    message: "Preparing recommendations...",
     backendStep: "DiscoverResponse assembly",
   },
 ];
 
 /** Max stage index shown while waiting for the real API response. */
-export const PIPELINE_MAX_STAGE_WHILE_PENDING = 3;
+export const PIPELINE_MAX_STAGE_WHILE_PENDING = 2;

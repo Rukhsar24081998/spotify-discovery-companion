@@ -10,10 +10,28 @@
 // Canonical enums & constants (see cursor-rules.md → Canonical Terminology)
 // ---------------------------------------------------------------------------
 
-export const MOODS = ['Happy', 'Calm', 'Focused', 'Energetic', 'Nostalgic'] as const;
+export const MOODS = [
+  'Happy',
+  'Calm',
+  'Energetic',
+  'Focused',
+  'Nostalgic',
+  'Romantic',
+  'Melancholic',
+  'Chill',
+] as const;
 export type Mood = (typeof MOODS)[number];
 
-export const ACTIVITIES = ['Workout', 'Studying', 'Working', 'Driving', 'Relaxing'] as const;
+export const ACTIVITIES = [
+  'Workout',
+  'Studying',
+  'Working',
+  'Driving',
+  'Relaxing',
+  'Traveling',
+  'Gaming',
+  'Cooking',
+] as const;
 export type Activity = (typeof ACTIVITIES)[number];
 
 export const FEEDBACK_REASONS = [
@@ -26,7 +44,7 @@ export type FeedbackReason = (typeof FEEDBACK_REASONS)[number];
 
 export const MAX_FAVORITE_ARTISTS = 3;
 export const MAX_ARTIST_NAME_LENGTH = 80;
-export const TARGET_RECOMMENDATIONS = 5;
+export const TARGET_RECOMMENDATIONS = 12;
 export const MIN_RECOMMENDATIONS = 3;
 
 export const MIN_DISCOVERY_SCORE = 0;
@@ -197,7 +215,7 @@ export interface SpotifySearchResponse {
 /** A single row in the top-bar browse search dropdown. */
 export interface BrowseSearchItem {
   id: string;
-  type: 'track' | 'artist' | 'album';
+  type: 'track' | 'artist' | 'album' | 'playlist';
   title: string;
   subtitle: string;
   imageUrl: string;
@@ -205,9 +223,11 @@ export interface BrowseSearchItem {
 }
 
 export interface SpotifyBrowseSearchResponse {
+  topResult: BrowseSearchItem | null;
   tracks: BrowseSearchItem[];
   artists: BrowseSearchItem[];
   albums: BrowseSearchItem[];
+  playlists: BrowseSearchItem[];
 }
 
 export const MIN_BROWSE_SEARCH_LENGTH = 2;

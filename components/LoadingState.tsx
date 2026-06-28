@@ -123,7 +123,7 @@ export function LoadingState({
   const currentStage = stages[Math.min(activeIndex, stages.length - 1)] ?? stages[0];
 
   return (
-    <div className="relative mb-10 animate-fade-in">
+    <div className="relative mb-8 animate-fade-in">
       <div className="lg:pr-[340px]">
         <DiscoverFormPreview
           mood={mood}

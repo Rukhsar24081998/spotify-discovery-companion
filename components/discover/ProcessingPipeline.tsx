@@ -8,32 +8,44 @@ interface ProcessingPipelineProps {
 }
 
 /**
- * Seven-stage pipeline list for the AI processing screen.
+ * Staged AI thinking sequence for the discovery loading screen.
  */
 export function ProcessingPipeline({ stages, activeIndex, completedCount }: ProcessingPipelineProps) {
   return (
-    <ol className="relative z-10 mt-8 space-y-3 rounded-xl border border-white/[0.06] bg-[#121212]/80 p-5 backdrop-blur-sm">
+    <ol
+      aria-label="AI discovery progress"
+      className="relative z-10 mt-6 space-y-2 rounded-xl border border-white/[0.06] bg-[#121212]/80 p-4 backdrop-blur-sm sm:p-5"
+    >
       {stages.map((stage, index) => {
         const complete = index < completedCount;
         const active = index === activeIndex && !complete && completedCount < stages.length;
+        const visible = index <= activeIndex || index < completedCount;
+
+        if (!visible) {
+          return null;
+        }
 
         return (
-          <li key={stage.id} className="flex items-start gap-3">
+          <li
+            key={stage.id}
+            className="flex items-start gap-3 motion-reduce:animate-none animate-fade-in"
+            style={{ animationDelay: `${index * 80}ms` }}
+          >
             <span
               aria-hidden="true"
-              className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center"
+              className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center"
             >
               {complete ? (
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent/15">
-                  <Check className="h-4 w-4 text-accent" />
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/15">
+                  <Check className="h-3.5 w-3.5 text-accent" />
                 </span>
               ) : active ? (
-                <span className="relative flex h-6 w-6 items-center justify-center">
-                  <span className="absolute h-6 w-6 animate-ping rounded-full bg-accent/20 motion-reduce:animate-none" />
-                  <span className="relative h-2.5 w-2.5 rounded-full bg-accent" />
+                <span className="relative flex h-5 w-5 items-center justify-center">
+                  <span className="absolute h-5 w-5 animate-ping rounded-full bg-accent/20 motion-reduce:animate-none" />
+                  <span className="relative h-2 w-2 rounded-full bg-accent" />
                 </span>
               ) : (
-                <span className="h-2.5 w-2.5 rounded-full border border-white/20" />
+                <span className="h-2 w-2 rounded-full border border-white/20" />
               )}
             </span>
             <div className="min-w-0 flex-1">
@@ -42,13 +54,8 @@ export function ProcessingPipeline({ stages, activeIndex, completedCount }: Proc
                   complete || active ? "text-white" : "text-white/40"
                 }`}
               >
-                {stage.label}
+                {complete ? stage.label : active ? stage.message : stage.label}
               </p>
-              {active && (
-                <p className="mt-0.5 text-xs text-white/50 motion-reduce:transition-none animate-fade-in">
-                  {stage.message}
-                </p>
-              )}
             </div>
           </li>
         );

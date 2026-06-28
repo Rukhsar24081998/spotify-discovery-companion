@@ -9,6 +9,9 @@ import { resolveSpotifyLink } from "@/lib/spotifyLinks";
 
 export const SPOTIFY_WEB_URL = "https://open.spotify.com";
 
+/** Opens Spotify Premium marketing page in a new tab. */
+export const SPOTIFY_PREMIUM_URL = "https://www.spotify.com/premium/";
+
 /** Local fallback when artwork fails to load. */
 export const ARTWORK_PLACEHOLDER_SRC = "/images/placeholders/music-placeholder.png";
 
