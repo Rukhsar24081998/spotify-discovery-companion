@@ -14,15 +14,15 @@ export function TopNavigation() {
   }
 
   return (
-    <header className="flex shrink-0 items-center gap-6 px-6 py-5">
+    <header className="flex min-w-0 shrink-0 items-center gap-3 px-4 py-3 md:gap-5 md:px-5 md:py-4 xl:gap-6 xl:px-6 xl:py-5">
       <SpotifySearch />
 
-      <div className="ml-auto flex shrink-0 items-center gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-1.5 md:gap-2">
         <button
           type="button"
           onClick={handleUpgradeClick}
           aria-label="Upgrade to Spotify Premium"
-          className="hidden rounded-full border border-white/15 px-5 py-1.5 text-xs font-bold uppercase tracking-wide text-white/90 transition-colors duration-150 hover:border-white/30 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:inline-flex"
+          className="hidden rounded-full border border-white/15 px-5 py-1.5 text-xs font-bold uppercase tracking-wide text-white/90 transition-colors duration-150 hover:border-white/30 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent md:inline-flex"
         >
           Upgrade
         </button>

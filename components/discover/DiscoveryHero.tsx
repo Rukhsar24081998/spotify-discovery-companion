@@ -13,7 +13,7 @@ export function DiscoveryHero({ onGetStarted }: DiscoveryHeroProps) {
   return (
     <section
       aria-labelledby="discovery-hero-heading"
-      className="relative overflow-hidden rounded-xl p-6 sm:p-8"
+      className="relative overflow-hidden rounded-xl p-4 md:p-6 xl:p-8"
       style={{
         background:
           "radial-gradient(ellipse 90% 120% at 15% 50%, #1a5c38 0%, #0f3d24 35%, #0a1f14 60%, #121212 100%)",
@@ -29,12 +29,12 @@ export function DiscoveryHero({ onGetStarted }: DiscoveryHeroProps) {
 
         <h1
           id="discovery-hero-heading"
-          className="text-[1.75rem] font-bold leading-[1.12] tracking-[-0.03em] text-white sm:text-[2.1rem]"
+          className="text-xl font-bold leading-[1.12] tracking-[-0.03em] text-white md:text-[1.75rem] xl:text-[2.1rem]"
         >
           Let&apos;s find something you&apos;ll love.
         </h1>
 
-        <p className="max-w-xl text-[15px] leading-relaxed text-white/60 sm:text-base">
+        <p className="max-w-xl text-sm leading-relaxed text-white/60 md:text-[15px] xl:text-base">
           Tell us how you&apos;re feeling and what you&apos;re up to. Our AI will search Spotify
           and surface tracks with clear explanations — not just another shuffle.
         </p>

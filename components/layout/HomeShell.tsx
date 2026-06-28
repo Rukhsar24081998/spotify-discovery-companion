@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { AppSessionProvider, useAppSession } from "@/components/layout/AppSessionContext";
 import { PlaybackProvider } from "@/components/layout/BottomPlayer";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { MyLibraryProvider } from "@/components/layout/MyLibraryContext";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -21,14 +22,15 @@ function HomeShellInner({ children, activeItem = "home" }: HomeShellProps) {
       key={sessionKey}
       emptyState={activeItem === "discover" ? "recommendations" : "browse"}
     >
-      <div className="flex min-h-screen flex-col bg-black">
-        <div className="flex min-h-0 flex-1 gap-0 p-2 pl-0">
+      <div className="flex min-h-screen flex-col overflow-x-hidden bg-black">
+        <div className="flex min-h-0 flex-1 gap-0 md:p-2 md:pl-0 xl:p-2 xl:pl-0">
           <Sidebar activeItem={activeItem} />
-          <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg bg-[#121212]">
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[#121212] md:rounded-lg">
             <TopNavigation />
             <PageContainer>{children}</PageContainer>
           </div>
         </div>
+        <MobileBottomNav activeItem={activeItem} />
       </div>
     </PlaybackProvider>
   );

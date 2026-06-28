@@ -70,14 +70,14 @@ export function RecommendationCard({
   return (
     <CardShell
       interactive
-      className={`p-3.5 transition-all duration-300 ease-out motion-reduce:transition-none sm:p-4 ${exitClasses}`}
+      className={`w-full p-3.5 transition-all duration-300 ease-out motion-reduce:transition-none xl:p-4 ${exitClasses}`}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-4">
         <button
           type="button"
           onClick={handleTrackSelect}
           aria-label={`Open ${recommendation.title} on Spotify`}
-          className="relative aspect-square h-24 w-24 shrink-0 cursor-pointer overflow-hidden rounded-md bg-surface-hover transition-opacity duration-150 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface sm:h-28 sm:w-28"
+          className="relative mx-auto aspect-square w-full max-w-[240px] shrink-0 cursor-pointer overflow-hidden rounded-md bg-surface-hover transition-opacity duration-150 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface md:mx-0 md:h-24 md:w-24 md:max-w-none xl:h-28 xl:w-28"
         >
           {!artworkLoaded && (
             <div
@@ -109,7 +109,7 @@ export function RecommendationCard({
             <button
               type="button"
               onClick={handleTrackSelect}
-              className="block w-full min-w-0 truncate text-left text-base font-bold leading-tight text-white transition-colors duration-150 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface sm:text-lg"
+              className="block w-full min-w-0 truncate text-left text-base font-bold leading-tight text-white transition-colors duration-150 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface xl:text-lg"
             >
               {recommendation.title}
             </button>
@@ -177,24 +177,24 @@ export function RecommendationCard({
             onDeactivate={onPreviewDeactivate}
           />
 
-          <div className="flex flex-col gap-2 pt-0.5 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="flex flex-col gap-2 pt-0.5 md:flex-row md:flex-wrap md:items-center">
             <a
               href={recommendation.spotifyUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => selectItem(nowSelectedFromRecommendation(recommendation))}
-              className="inline-flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-black transition-colors duration-150 motion-reduce:transition-none hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto sm:min-w-[188px]"
+              className="inline-flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-black transition-colors duration-150 motion-reduce:transition-none hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background md:w-auto xl:min-w-[188px]"
             >
               <Music2 className="h-4 w-4" aria-hidden="true" />
               Continue in Spotify
             </a>
 
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex w-full flex-wrap items-center gap-1.5 md:w-auto">
               <button
                 type="button"
                 onClick={onSave}
                 aria-pressed={isSaved}
-                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full border border-white/20 px-3.5 py-1.5 text-support font-medium text-white transition-colors duration-150 motion-reduce:transition-none hover:border-white/40 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-full border border-white/20 px-3.5 py-1.5 text-support font-medium text-white transition-colors duration-150 motion-reduce:transition-none hover:border-white/40 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background md:flex-none"
               >
                 <Heart
                   className={`h-3.5 w-3.5 ${isSaved ? "fill-accent text-accent" : ""}`}
@@ -206,7 +206,7 @@ export function RecommendationCard({
               <button
                 type="button"
                 onClick={onSkip}
-                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-3.5 py-1.5 text-support text-white/70 transition-colors duration-150 motion-reduce:transition-none hover:bg-surface-hover hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-full px-3.5 py-1.5 text-support text-white/70 transition-colors duration-150 motion-reduce:transition-none hover:bg-surface-hover hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background md:flex-none"
               >
                 <SkipForward className="h-3.5 w-3.5" aria-hidden="true" />
                 Skip

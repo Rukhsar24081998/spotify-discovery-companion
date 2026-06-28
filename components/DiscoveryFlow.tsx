@@ -573,17 +573,17 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
   }
 
   return (
-    <div className="mb-10 flex flex-col gap-10 lg:gap-12">
+    <div className="mb-10 flex flex-col gap-8 md:gap-10 xl:gap-12">
       <DiscoveryHero onGetStarted={scrollToForm} />
 
-      <div id="discover-form" className="scroll-mt-28 flex flex-col gap-8 sm:gap-10">
+      <div id="discover-form" className="scroll-mt-24 flex flex-col gap-6 md:scroll-mt-28 md:gap-8 xl:gap-10">
         <MoodSelector value={mood} onChange={setMood} />
 
         <ActivitySelector value={activity} onChange={setActivity} />
 
         <section
           aria-labelledby="artists-step-label"
-          className="rounded-xl border border-white/[0.06] bg-[#181818]/80 p-5 sm:p-6"
+          className="rounded-xl border border-white/[0.06] bg-[#181818]/80 p-4 md:p-5 xl:p-6"
         >
           <p
             id="artists-step-label"
@@ -603,7 +603,7 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
               type="button"
               onClick={handleSubmit}
               disabled={!canSubmit || isDiscovering}
-              className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-accent px-8 py-3.5 text-body font-bold text-black shadow-[0_4px_20px_rgba(29,185,84,0.35)] transition-all duration-200 ease-out motion-reduce:transition-none hover:bg-accent-hover hover:shadow-[0_6px_24px_rgba(29,185,84,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-white/50 disabled:shadow-none sm:w-auto"
+              className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-accent px-8 py-3.5 text-body font-bold text-black shadow-[0_4px_20px_rgba(29,185,84,0.35)] transition-all duration-200 ease-out motion-reduce:transition-none hover:bg-accent-hover hover:shadow-[0_6px_24px_rgba(29,185,84,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-white/50 disabled:shadow-none md:w-auto"
             >
               Discover Music
             </button>
@@ -612,7 +612,7 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
               onClick={handleSurpriseMe}
               disabled={isDiscovering}
               aria-busy={isDiscovering}
-              className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full border border-white/25 bg-transparent px-8 py-3.5 text-body font-semibold text-white transition-all duration-200 ease-out motion-reduce:transition-none hover:border-white/40 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/35 sm:w-auto"
+              className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full border border-white/25 bg-transparent px-8 py-3.5 text-body font-semibold text-white transition-all duration-200 ease-out motion-reduce:transition-none hover:border-white/40 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/35 md:w-auto"
             >
               ✨ Surprise Me
             </button>

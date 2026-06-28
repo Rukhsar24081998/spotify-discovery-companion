@@ -12,7 +12,7 @@ export function MoodSelector({ value, onChange }: MoodSelectorProps) {
   return (
     <section
       aria-labelledby="mood-step-label"
-      className="rounded-xl border border-white/[0.06] bg-[#181818]/80 p-5 sm:p-6"
+      className="rounded-xl border border-white/[0.06] bg-[#181818]/80 p-4 md:p-5 xl:p-6"
     >
       <p
         id="mood-step-label"

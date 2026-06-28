@@ -8,11 +8,11 @@
   }
 
   html {
-    @apply bg-background;
+    @apply overflow-x-hidden bg-background;
   }
 
   body {
-    @apply bg-background font-sans text-white antialiased;
+    @apply overflow-x-hidden bg-background font-sans text-white antialiased;
   }
 }
 

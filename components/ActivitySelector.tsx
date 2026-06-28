@@ -12,7 +12,7 @@ export function ActivitySelector({ value, onChange }: ActivitySelectorProps) {
   return (
     <section
       aria-labelledby="activity-step-label"
-      className="rounded-xl border border-white/[0.06] bg-[#181818]/80 p-5 sm:p-6"
+      className="rounded-xl border border-white/[0.06] bg-[#181818]/80 p-4 md:p-5 xl:p-6"
     >
       <p
         id="activity-step-label"

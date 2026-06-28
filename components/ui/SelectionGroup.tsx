@@ -64,7 +64,7 @@ export function SelectionGroup<T extends string>({
         <h2
           id={resolvedHeadingId}
           tabIndex={-1}
-          className="rounded-sm text-lg font-bold tracking-tight text-white outline-none focus-visible:ring-2 focus-visible:ring-accent sm:text-xl"
+          className="rounded-sm text-lg font-bold tracking-tight text-white outline-none focus-visible:ring-2 focus-visible:ring-accent xl:text-xl"
         >
           {legend}
         </h2>
@@ -79,7 +79,7 @@ export function SelectionGroup<T extends string>({
         aria-labelledby={resolvedHeadingId}
         aria-describedby={description ? `${resolvedHeadingId}-description` : undefined}
         onKeyDown={handleGroupKeyDown}
-        className="flex flex-wrap gap-2.5 sm:gap-3"
+        className="flex flex-wrap gap-2 md:gap-2.5 xl:gap-3"
       >
         {options.map((option) => (
           <PillButton

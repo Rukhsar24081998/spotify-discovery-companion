@@ -33,14 +33,14 @@ export function DiscoverySummaryCard({
   return (
     <section
       aria-label="AI discovery summary"
-      className="rounded-xl border border-white/[0.08] bg-[#181818] p-4 sm:p-5"
+      className="rounded-xl border border-white/[0.08] bg-[#181818] p-4 md:p-5"
     >
       <div className="mb-3 flex items-center gap-2">
         <Sparkles className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
         <h2 className="text-sm font-bold text-white">AI Summary</h2>
       </div>
 
-      <dl className="mb-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3 sm:gap-4">
+      <dl className="mb-3 grid grid-cols-1 gap-3 text-sm md:grid-cols-2 md:gap-4 xl:grid-cols-3">
         <div className="space-y-1.5">
           <dt className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/45">
             Mood

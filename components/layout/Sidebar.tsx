@@ -25,17 +25,18 @@ function SpotifyLogo({ className }: { className?: string }) {
 
 /**
  * Spotify-inspired left navigation for the app shell.
+ * Hidden on mobile; collapses to icons on tablet; full width on desktop (xl+).
  */
 export function Sidebar({ activeItem = "home" }: SidebarProps) {
   return (
-    <aside className="flex w-[260px] shrink-0 flex-col bg-black px-6 pt-6">
+    <aside className="hidden w-[88px] shrink-0 flex-col bg-black px-3 pt-5 md:flex xl:w-[260px] xl:px-6 xl:pt-6">
       <Link
         href="/"
-        className="group mb-7 inline-flex items-center gap-3 rounded-md transition-colors duration-150 motion-reduce:transition-none hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="group mb-5 inline-flex items-center justify-center gap-3 rounded-md transition-colors duration-150 motion-reduce:transition-none hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent xl:mb-7 xl:justify-start"
         aria-label="Spotify home"
       >
         <SpotifyLogo className="h-8 w-8 shrink-0 text-accent" />
-        <span className="text-[17px] font-bold leading-none tracking-[-0.04em] text-white">
+        <span className="hidden text-[17px] font-bold leading-none tracking-[-0.04em] text-white xl:inline">
           Spotify
         </span>
       </Link>
@@ -54,14 +55,15 @@ export function Sidebar({ activeItem = "home" }: SidebarProps) {
               key={item.id}
               href={item.href}
               aria-current={isActive ? "page" : undefined}
-              className={`inline-flex items-center gap-4 rounded-md px-3 py-2.5 text-[15px] font-medium transition-all duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${linkClasses}`}
+              title={item.label}
+              className={`inline-flex items-center justify-center gap-4 rounded-md px-3 py-2.5 text-[15px] font-medium transition-all duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent xl:justify-start ${linkClasses}`}
             >
               <Icon
                 className={`h-6 w-6 shrink-0 transition-colors duration-150 ${isActive ? "text-accent" : "text-current"}`}
                 aria-hidden="true"
                 strokeWidth={isActive ? 2.25 : 2}
               />
-              {item.label}
+              <span className="hidden xl:inline">{item.label}</span>
             </Link>
           );
         })}

@@ -570,10 +570,10 @@ export function SpotifySearch() {
   return (
     <div
       ref={rootRef}
-      className="relative mx-auto w-full max-w-[480px] flex-1"
+      className="relative mx-auto w-full min-w-0 max-w-full flex-1 xl:max-w-[480px]"
     >
       <Search
-        className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-white/45"
+        className="pointer-events-none absolute left-3.5 top-1/2 h-[16px] w-[16px] -translate-y-1/2 text-white/45 xl:left-4 xl:h-[18px] xl:w-[18px]"
         aria-hidden="true"
       />
 
@@ -598,7 +598,7 @@ export function SpotifySearch() {
         aria-busy={isLoading}
         aria-activedescendant={activeDescendant}
         aria-label={SEARCH_PLACEHOLDER}
-        className="h-12 w-full rounded-full bg-[#282828] pl-12 pr-5 text-sm text-white placeholder:text-white/45 transition-colors duration-150 hover:bg-[#333333] focus-visible:bg-[#333333] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="h-10 w-full rounded-full bg-[#282828] pl-11 pr-4 text-sm text-white placeholder:text-white/45 transition-colors duration-150 hover:bg-[#333333] focus-visible:bg-[#333333] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent md:h-11 xl:h-12 xl:pl-12 xl:pr-5"
       />
 
       {showEmptyPanel && (

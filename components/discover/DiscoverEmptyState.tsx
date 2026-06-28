@@ -92,12 +92,12 @@ export function DiscoverEmptyState({
   return (
     <section
       aria-label="Discovery preview"
-      className="relative overflow-hidden rounded-xl border border-dashed border-white/10 bg-gradient-to-br from-[#181818] via-[#151515] to-[#101010] px-5 py-6 sm:px-8 sm:py-8"
+      className="relative overflow-hidden rounded-xl border border-dashed border-white/10 bg-gradient-to-br from-[#181818] via-[#151515] to-[#101010] px-4 py-5 md:px-5 md:py-6 xl:px-8 xl:py-8"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(29,185,84,0.08),transparent_55%)]" />
 
       <div className="relative flex flex-col gap-4">
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-8 lg:gap-10">
+        <div className="grid grid-cols-1 gap-5 md:gap-6 xl:grid-cols-2 xl:gap-8 xl:gap-y-10">
           {/* Left — selection summary */}
           <div>
             <h2 className="mb-3 text-sm font-bold text-white sm:text-base">
@@ -132,7 +132,7 @@ export function DiscoverEmptyState({
           </div>
 
           {/* Right — inferred style & AI scope */}
-          <div className="flex flex-col gap-3 md:border-l md:border-white/[0.06] md:pl-8 lg:pl-10">
+          <div className="flex flex-col gap-3 xl:border-l xl:border-white/[0.06] xl:pl-10">
             <div>
               <SectionLabel>🎧 Expected Music Style</SectionLabel>
               <ul
