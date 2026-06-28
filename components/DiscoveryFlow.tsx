@@ -12,11 +12,21 @@ import type {
   FeedbackRequest,
   FeedbackResponse,
   Mood,
-  Recommendation,
 } from "@/types";
 import { ACTIVITIES, MOODS } from "@/types";
 import { consumeDiscoverMoodPrefill } from "@/lib/discoverMoodPrefill";
+import {
+  countMix,
+  enrichRecommendations,
+  type EnrichedRecommendation,
+} from "@/lib/diversityEngine";
 import { isMood } from "@/lib/utils";
+import {
+  applySavePreference,
+  applySkipPreference,
+  SAVE_PREFERENCE_MESSAGE,
+  SKIP_PREFERENCE_MESSAGE,
+} from "@/lib/userPreferenceProfile";
 import { useMyLibrary } from "@/components/layout/MyLibraryContext";
 import { Heading } from "@/components/ui/Heading";
 import {
@@ -27,6 +37,8 @@ import {
 import { DiscoverySummaryCard } from "@/components/discover/DiscoverySummaryCard";
 import { formatRecommendationCount } from "@/components/discover/discoverySummary";
 import { RecommendationSuccessBanner } from "@/components/discover/RecommendationSuccessBanner";
+import { RecommendationMixBar } from "@/components/discover/RecommendationMixBar";
+import { PreferenceFeedbackToast } from "@/components/discover/PreferenceFeedbackToast";
 import { DiscoverEmptyState } from "@/components/discover/DiscoverEmptyState";
 import { DiscoveryHero } from "@/components/discover/DiscoveryHero";
 import { getDiscoverHelperMessage } from "@/components/discover/discoveryInputOptions";
@@ -46,7 +58,21 @@ interface DiscoveryFlowProps {
   onPhaseChange?: (phase: FlowPhase) => void;
 }
 
+const PREFERENCE_MESSAGE_MS = 4000;
 const MIN_LOADING_MS = 1750;
+
+function applyDiversityLayer(
+  response: DiscoverResponse,
+  request: DiscoverRequest,
+): EnrichedRecommendation[] {
+  return enrichRecommendations({
+    recommendations: response.recommendations,
+    mood: request.mood,
+    activity: request.activity,
+    favoriteArtists: request.favoriteArtists ?? [],
+    candidatePool: response.candidatePool,
+  });
+}
 const SKIP_EXIT_MS = 300;
 
 const DEFAULT_ERROR_MESSAGE = "Please try again in a moment.";
@@ -140,8 +166,9 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
   const [phase, setPhase] = useState<FlowPhase>("input");
 
   const [discoverRequest, setDiscoverRequest] = useState<DiscoverRequest | null>(null);
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [recommendations, setRecommendations] = useState<EnrichedRecommendation[]>([]);
   const [meta, setMeta] = useState<DiscoveryMeta | null>(null);
+  const [preferenceMessage, setPreferenceMessage] = useState<string | null>(null);
   const [exitingTrackIds, setExitingTrackIds] = useState<Set<string>>(new Set());
   const [activePreviewTrackId, setActivePreviewTrackId] = useState<string | null>(null);
 
@@ -171,6 +198,18 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
   const isDiscovering = phase === "loading";
 
   useEffect(() => {
+    if (!preferenceMessage) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setPreferenceMessage(null);
+    }, PREFERENCE_MESSAGE_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [preferenceMessage]);
+
+  useEffect(() => {
     const prefill = consumeDiscoverMoodPrefill();
     if (isMood(prefill)) {
       setMood(prefill);
@@ -187,8 +226,9 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
 
   const applyDiscoverResponse = useCallback(
     (response: DiscoverResponse, request: DiscoverRequest) => {
+      const diversified = applyDiversityLayer(response, request);
       setDiscoverRequest(request);
-      setRecommendations(response.recommendations);
+      setRecommendations(diversified);
       setMeta(response.meta);
       setExitingTrackIds(new Set());
       setActivePreviewTrackId(null);
@@ -201,7 +241,7 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
       sessionRef.current = {
         discoverRequest: request,
         candidatePool: response.candidatePool,
-        shownTrackIds: response.recommendations.map((rec) => rec.trackId),
+        shownTrackIds: diversified.map((rec) => rec.trackId),
         skippedTrackIds: [],
         skipCount: 0,
         skipsSinceFeedback: 0,
@@ -313,11 +353,18 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
     setActivePreviewTrackId((current) => (current === trackId ? null : current));
   }
 
-  function handleSave(recommendation: Recommendation) {
+  function handleSave(recommendation: EnrichedRecommendation) {
     toggleSave(recommendation);
+    applySavePreference(recommendation.diversityCategory);
+    setPreferenceMessage(SAVE_PREFERENCE_MESSAGE);
   }
 
-  function handleSkip(trackId: string) {
+  function handleSkip(recommendation: EnrichedRecommendation) {
+    const trackId = recommendation.trackId;
+
+    applySkipPreference(recommendation.diversityCategory);
+    setPreferenceMessage(SKIP_PREFERENCE_MESSAGE);
+
     if (exitingTrackIds.has(trackId)) {
       return;
     }
@@ -397,12 +444,13 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
     try {
       const response = await fetchFeedback(payload);
       setActivePreviewTrackId(null);
-      setRecommendations(response.recommendations);
+      const diversified = applyDiversityLayer(response, session.discoverRequest);
+      setRecommendations(diversified);
       setMeta(response.meta);
       sessionRef.current = {
         ...session,
         candidatePool: response.candidatePool,
-        shownTrackIds: response.recommendations.map((rec) => rec.trackId),
+        shownTrackIds: diversified.map((rec) => rec.trackId),
         skipsSinceFeedback: 0,
       };
       setFeedbackDialogOpen(false);
@@ -465,6 +513,7 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
 
     const visibleRecommendations = recommendations.slice(0, visibleRecommendationCount);
     const hasMoreRecommendations = recommendations.length > visibleRecommendationCount;
+    const mixCounts = countMix(recommendations);
 
     return (
       <>
@@ -497,6 +546,10 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
 
           <RecommendationSuccessBanner count={recommendations.length} />
 
+          <RecommendationMixBar counts={mixCounts} />
+
+          <PreferenceFeedbackToast message={preferenceMessage} />
+
           <ul className="flex flex-col gap-4" aria-label="Recommendations">
             {visibleRecommendations.map((recommendation, index) => (
               <li
@@ -512,7 +565,7 @@ export function DiscoveryFlow({ onPhaseChange }: DiscoveryFlowProps = {}) {
                   onPreviewActivate={handlePreviewActivate}
                   onPreviewDeactivate={handlePreviewDeactivate}
                   onSave={() => handleSave(recommendation)}
-                  onSkip={() => handleSkip(recommendation.trackId)}
+                  onSkip={() => handleSkip(recommendation)}
                   contextMood={resultMood}
                   contextActivity={resultActivity}
                 />

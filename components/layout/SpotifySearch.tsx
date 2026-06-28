@@ -519,7 +519,7 @@ export function SpotifySearch() {
             <li className="px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wide text-white/40">
               Recent Searches
             </li>
-            {emptyPanelItems.map((item, index) => {
+            {emptyPanelItems.map((item) => {
               if (item.kind === "clear") {
                 return renderEmptyQueryItem(item, -1);
               }

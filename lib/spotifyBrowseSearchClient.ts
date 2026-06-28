@@ -1,5 +1,5 @@
 import type { SpotifyBrowseSearchResponse } from "@/types";
-import { BROWSE_SEARCH_LIMIT, MIN_BROWSE_SEARCH_LENGTH } from "@/types";
+import { MIN_BROWSE_SEARCH_LENGTH } from "@/types";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const MAX_CACHE_ENTRIES = 50;

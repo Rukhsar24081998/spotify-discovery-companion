@@ -8,6 +8,7 @@ import {
   getPreviewGenres,
   hasPreviewGenres,
 } from "@/components/discover/discoveryPreviewGenres";
+import { buildResearchBackedStrategy } from "@/lib/researchBackedStrategy";
 
 interface DiscoverEmptyStateProps {
   mood: Mood | null;
@@ -15,12 +16,7 @@ interface DiscoverEmptyStateProps {
   favoriteArtists: string[];
 }
 
-const AI_SEARCH_TARGETS = [
-  "Similar artists",
-  "Matching genres",
-  "Hidden gems",
-  "Popular tracks",
-] as const;
+const RESEARCH_PRINCIPLE_ICON = "✓";
 
 function PreviewChip({
   label,
@@ -88,6 +84,7 @@ export function DiscoverEmptyState({
   const hasArtist = favoriteArtists.length > 0;
   const genresReady = hasPreviewGenres(mood, activity);
   const genres = getPreviewGenres(mood, activity);
+  const strategy = buildResearchBackedStrategy(mood, activity, favoriteArtists);
 
   return (
     <section
@@ -152,17 +149,29 @@ export function DiscoverEmptyState({
             </div>
 
             <div>
-              <SectionLabel>🤖 AI will search for</SectionLabel>
-              <ul className="space-y-0.5 text-sm text-white/60">
-                {AI_SEARCH_TARGETS.map((item) => (
-                  <li key={item} className="flex items-center gap-2">
+              <SectionLabel>🧠 Research-Backed AI Strategy</SectionLabel>
+              <p className="mb-2 text-sm leading-relaxed text-white/60">
+                {strategy.intro}
+              </p>
+              <ul
+                className="mb-3 space-y-0.5 text-sm text-white/60"
+                aria-label="Research-backed optimization principles"
+              >
+                {strategy.principles.map((item) => (
+                  <li key={item} className="flex items-start gap-2">
                     <span className="text-accent/80" aria-hidden="true">
-                      ✓
+                      {RESEARCH_PRINCIPLE_ICON}
                     </span>
                     {item}
                   </li>
                 ))}
               </ul>
+              <p
+                className="text-sm leading-relaxed text-white/70"
+                aria-live="polite"
+              >
+                {strategy.personalizedParagraph}
+              </p>
             </div>
 
             <div>
