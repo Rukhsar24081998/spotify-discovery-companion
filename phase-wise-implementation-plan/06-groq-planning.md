@@ -45,12 +45,13 @@ Implement Groq Call 1 — the combined planning call that turns `{ mood, activit
 
 ## Implementation notes
 
-- Model `llama-3.3-70b-versatile`; `temperature` 0.3; response format `{ "type": "json_object" }`; bounded `max_tokens` (~1024).
+- Model `openai/gpt-oss-120b`; `temperature` 0.3; response format `{ "type": "json_object" }`; bounded `max_tokens` (~1024).
+- GPT-OSS JSON params: `include_reasoning: false`, `reasoning_effort: "low"`.
 - Output object: `{ intent, strategy, searchQuery }` exactly as documented; `searchQuery` is a non-empty Spotify-friendly string.
 - The model must reason about listening goal, **never** map mood → genre directly (`ai-workflow.md` → Step 1).
 - Prompt-injection hygiene: insert user artist text as data, instruct the model to ignore embedded instructions.
 - Keep prompts concise (performance). Server-only; never call Groq from the browser.
-- Fallback model `llama-3.1-8b-instant` permitted for planning if the primary is unavailable.
+- Fallback model `openai/gpt-oss-20b` permitted for planning if the primary is unavailable.
 
 ## Edge cases
 

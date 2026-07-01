@@ -412,13 +412,14 @@ Updated Recommendations
 
 | Setting | Value | Rationale |
 | --- | --- | --- |
-| **Model** | `llama-3.3-70b-versatile` | Strong reasoning + reliable structured JSON; available on Groq. |
+| **Model** | `openai/gpt-oss-120b` | Groq production replacement for deprecated Llama 3.3 70B; strong structured JSON. |
 | **Temperature** | `0.3` | Low enough for consistent, reproducible ranking/scoring; high enough for natural explanations. |
 | **Response format** | `{ "type": "json_object" }` | Forces valid JSON output (JSON mode). |
+| **GPT-OSS JSON params** | `include_reasoning: false`, `reasoning_effort: "low"` | Keeps JSON in `message.content` without reasoning tokens in the response body. |
 | **max_tokens** | ~1024 (planning), ~1536 (ranking) | Bounds latency and cost; explanations are short. |
 | **Calls per discovery** | 2 (planning + ranking) | See "AI Responsibilities". |
 
-If `llama-3.3-70b-versatile` is unavailable, fall back to `llama-3.1-8b-instant` for the planning call; the ranking call should stay on the larger model for quality.
+If `openai/gpt-oss-120b` is unavailable, fall back to `openai/gpt-oss-20b` for the planning call; the ranking call should stay on the larger model for quality.
 
 ## JSON Validation Rules
 

@@ -26,13 +26,41 @@ import { clampScore } from '@/lib/utils';
 import { devLog } from '@/lib/log';
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const PLANNING_MODEL = 'llama-3.3-70b-versatile';
-const PLANNING_FALLBACK_MODEL = 'llama-3.1-8b-instant';
-const RANKING_MODEL = 'llama-3.3-70b-versatile';
+/** @see https://console.groq.com/docs/model/openai/gpt-oss-120b */
+const PLANNING_MODEL = 'openai/gpt-oss-120b';
+/** @see https://console.groq.com/docs/models */
+const PLANNING_FALLBACK_MODEL = 'openai/gpt-oss-20b';
+const RANKING_MODEL = 'openai/gpt-oss-120b';
 const TEMPERATURE = 0.3;
 const PLANNING_MAX_TOKENS = 1024;
 const RANKING_MAX_TOKENS = 1536;
 const MAX_EXPLANATION_SENTENCES = 3;
+
+function buildGroqChatBody(
+  model: string,
+  prompt: ChatPrompt,
+  maxTokens: number,
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    model,
+    temperature: TEMPERATURE,
+    max_tokens: maxTokens,
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: prompt.system },
+      { role: 'user', content: prompt.user },
+    ],
+  };
+
+  // GPT-OSS models emit reasoning in a separate field; exclude it for JSON mode.
+  // @see https://console.groq.com/docs/reasoning
+  if (model.startsWith('openai/gpt-oss')) {
+    body.include_reasoning = false;
+    body.reasoning_effort = 'low';
+  }
+
+  return body;
+}
 
 /** Error carrying a shared ErrorCode so API routes can map it to the envelope. */
 export class GroqError extends Error {
@@ -74,16 +102,7 @@ async function callGroqJson(
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      model,
-      temperature: TEMPERATURE,
-      max_tokens: maxTokens,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: prompt.system },
-        { role: 'user', content: prompt.user },
-      ],
-    }),
+    body: JSON.stringify(buildGroqChatBody(model, prompt, maxTokens)),
   });
 
   if (!response.ok) {

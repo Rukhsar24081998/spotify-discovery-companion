@@ -163,7 +163,7 @@ flowchart TB
     end
 
     subgraph External["External Services"]
-        GROQ[Groq API<br/>Llama 3.3 70B]
+        GROQ[Groq API<br/>GPT-OSS 120B]
         SPOTIFY[Spotify Web API<br/>Client Credentials]
     end
 
@@ -261,8 +261,8 @@ flowchart LR
 | Technology | Purpose |
 | --- | --- |
 | Groq API | LLM reasoning — planning, ranking, feedback re-ranking |
-| Llama 3.3 70B Versatile | Primary model for planning and ranking |
-| Llama 3.1 8B Instant | Fallback planning model |
+| OpenAI GPT-OSS 120B (`openai/gpt-oss-120b`) | Primary model for planning and ranking |
+| OpenAI GPT-OSS 20B (`openai/gpt-oss-20b`) | Fallback planning model |
 | Knowledge Layer (`knowledge/`) | Structured research insights consumed by frontend AI modules |
 | Diversity Engine (`lib/diversityEngine.ts`) | Classification, ordering, and explanation enrichment |
 | Prompt templates (`lib/prompts.ts`) | Versioned, isolated Groq prompt builders |

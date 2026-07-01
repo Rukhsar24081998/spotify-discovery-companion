@@ -54,7 +54,7 @@ Replace the Phase 07 ranking stub with Groq Call 2: rank candidates, compute the
 - Variety is **set-level**: max one track per artist, no near-duplicates, span the strategy (e.g. both languages).
 - Balance: discovery-leaning by default; at least one high-familiarity track; never an all-favorites set.
 - Explanations ≤ 3 sentences, human, positive, no technical jargon; never invent songs/artists/URLs.
-- Model `llama-3.3-70b-versatile`, temp 0.3, JSON mode, `max_tokens` ~1536; retry-once on invalid JSON.
+- Model `openai/gpt-oss-120b`, temp 0.3, JSON mode, `max_tokens` ~1536; retry-once on invalid JSON.
 
 ## Edge cases
 

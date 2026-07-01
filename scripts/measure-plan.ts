@@ -27,8 +27,8 @@ interface GroqChatResponse {
 }
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const PRIMARY_MODEL = "llama-3.3-70b-versatile";
-const FALLBACK_MODEL = "llama-3.1-8b-instant";
+const PRIMARY_MODEL = "openai/gpt-oss-120b";
+const FALLBACK_MODEL = "openai/gpt-oss-20b";
 
 const SYSTEM_PROMPT = `You are the AI Discovery Companion, an intelligent music discovery assistant.
 You COMPLEMENT Spotify's recommendation engine; you do not replace it.
@@ -131,22 +131,29 @@ async function callGroq(
   model: string,
   context: PlanContext,
 ): Promise<string> {
+  const body: Record<string, unknown> = {
+    model,
+    temperature: 0.3,
+    max_tokens: 1024,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: buildUserPrompt(context) },
+    ],
+  };
+
+  if (model.startsWith("openai/gpt-oss")) {
+    body.include_reasoning = false;
+    body.reasoning_effort = "low";
+  }
+
   const response = await fetch(GROQ_URL, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model,
-      temperature: 0.3,
-      max_tokens: 1024,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: buildUserPrompt(context) },
-      ],
-    }),
+    body: JSON.stringify(body),
   });
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`);

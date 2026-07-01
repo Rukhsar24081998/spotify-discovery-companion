@@ -68,7 +68,7 @@ Responsibilities:
 
 The AI should **never generate fictional songs or artists**.
 
-**Configuration:** Model `llama-3.3-70b-versatile`, `temperature` 0.3, JSON response format, two calls per discovery. See `ai-workflow.md` → *Groq Configuration* for the full specification and JSON validation rules.
+**Configuration:** Model `openai/gpt-oss-120b` (planning + ranking), fallback `openai/gpt-oss-20b` (planning only), `temperature` 0.3, JSON response format, two calls per discovery. See `ai-workflow.md` → *Groq Configuration* for the full specification and JSON validation rules.
 
 ---
 
