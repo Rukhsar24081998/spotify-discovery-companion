@@ -384,44 +384,23 @@ Copy `.env.example` to `.env.local`. All keys are server-side only and must neve
 
 ## Screenshots
 
-Screenshots are grouped below. Design-reference captures are included where available; remaining slots are marked as placeholders for post-deployment capture.
+## Homepage
+![Homepage](./screenshots/01-homepage.png)
 
-### Product Screenshots (Available)
+## AI Discovery Entry
+![AI Discovery Entry](./screenshots/02-ai-discovery-entry.png)
 
-#### Homepage
+## Mood & Activity Selection
+![Mood & Activity Selection](./screenshots/03-mood-activity-selection.png)
 
-![Homepage — browse sections, search, and discovery entry points](./design-reference/01-home.png)
+## AI Summary
+![AI Summary](./screenshots/04-ai-summary.png)
 
-#### AI Discovery
+## Recommendation Results
+![Recommendation Results](./screenshots/05-recommendation-results.png)
 
-![Discovery input — mood, activity, and artist selection](./design-reference/02-discovery.png)
-
-#### Research-Backed Strategy
-
-![Research-backed AI strategy preview before recommendations run](./design-reference/02-discovery.png)
-
-#### Recommendation Results
-
-![Recommendation results with mix bar, scores, and explainable cards](./design-reference/04-results.png)
-
-### Product Screenshots (Placeholders)
-
-> Add the following captures after deployment and save to `./screenshots/`.
-
-#### Hero Overview
-
-<!-- ![Hero — full product overview](./screenshots/hero.png) -->
-*Placeholder — `./screenshots/hero.png`*
-
-#### My Library
-
-<!-- ![My Library — saved recommendations grouped by recency](./screenshots/my-library.png) -->
-*Placeholder — `./screenshots/my-library.png`*
-
-#### Mobile View
-
-<!-- ![Mobile responsive layout with bottom navigation](./screenshots/mobile.png) -->
-*Placeholder — `./screenshots/mobile.png`*
+## Continue in Spotify
+![Continue in Spotify](./screenshots/06-continue-in-spotify.png)
 
 ---
 
