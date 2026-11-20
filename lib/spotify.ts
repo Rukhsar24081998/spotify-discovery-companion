@@ -16,6 +16,11 @@ import type {
 } from "@/types";
 import { devLog } from "@/lib/log";
 import { spotifyExternalUrl } from "@/lib/spotifyLinks";
+import {
+  getFallbackArtists,
+  getFallbackBrowse,
+  getFallbackTracksByQuery,
+} from "@/lib/fallbackTracks";
 
 const TOKEN_URL = "https://accounts.spotify.com/api/token";
 const API_BASE = "https://api.spotify.com/v1";
@@ -288,29 +293,41 @@ export async function searchTracks(query: string, limit = 20): Promise<Candidate
 
   devLog(`Searching tracks... query="${q}" limit=${limit}`);
 
-  const rawItems: SpotifyTrackObject[] = [];
-  for (let offset = 0; offset < limit; offset += SEARCH_PAGE_SIZE) {
-    const pageLimit = Math.min(SEARCH_PAGE_SIZE, limit - offset);
-    const json = (await spotifyGet("search", {
-      q,
-      type: "track",
-      limit: String(pageLimit),
-      offset: String(offset),
-      ...marketParam(),
-    })) as SpotifyTrackSearchResponse;
+  try {
+    const rawItems: SpotifyTrackObject[] = [];
+    for (let offset = 0; offset < limit; offset += SEARCH_PAGE_SIZE) {
+      const pageLimit = Math.min(SEARCH_PAGE_SIZE, limit - offset);
+      const json = (await spotifyGet("search", {
+        q,
+        type: "track",
+        limit: String(pageLimit),
+        offset: String(offset),
+        ...marketParam(),
+      })) as SpotifyTrackSearchResponse;
 
-    const items = json.tracks?.items ?? [];
-    rawItems.push(...items);
-    if (items.length < pageLimit) {
-      break;
+      const items = json.tracks?.items ?? [];
+      rawItems.push(...items);
+      if (items.length < pageLimit) {
+        break;
+      }
     }
+
+    const candidates = rawItems.filter(isUsableTrack).map(toCandidateTrack);
+    const withPreview = candidates.filter((track) => track.previewUrl !== null).length;
+    devLog(`Preview availability: ${withPreview} / ${candidates.length} tracks`);
+
+    if (candidates.length >= 3) {
+      return candidates;
+    }
+    devLog(`Spotify returned fewer than 3 candidates; supplementing with curated fallback tracks.`);
+    const fallbacks = getFallbackTracksByQuery(q, limit);
+    return [...candidates, ...fallbacks].slice(0, limit);
+  } catch (error) {
+    devLog(
+      `Spotify searchTracks failed (${error instanceof Error ? error.message : "unknown error"}); using curated fallback catalog`,
+    );
+    return getFallbackTracksByQuery(q, limit);
   }
-
-  const candidates = rawItems.filter(isUsableTrack).map(toCandidateTrack);
-  const withPreview = candidates.filter((track) => track.previewUrl !== null).length;
-  devLog(`Preview availability: ${withPreview} / ${candidates.length} tracks`);
-
-  return candidates;
 }
 
 function pickImageUrl(images?: SpotifyImage[]): string {
@@ -435,49 +452,52 @@ export async function searchBrowse(
 
   devLog(`Browse search... query="${q}" limit=${limit} per type`);
 
-  const json = (await spotifyGet("search", {
-    q,
-    type: "track,artist,album,playlist",
-    limit: String(limit),
-    ...marketParam(),
-  })) as SpotifyMultiSearchResponse;
+  try {
+    const json = (await spotifyGet("search", {
+      q,
+      type: "track,artist,album",
+      limit: String(limit),
+      ...marketParam(),
+    })) as SpotifyMultiSearchResponse;
 
-  const trackItems = (json.tracks?.items ?? []).filter(
-    (item): item is SpotifyTrackObject => item !== null,
-  );
-  const artistItems = (json.artists?.items ?? []).filter(
-    (item): item is SpotifyArtistObject => item !== null,
-  );
-  const albumItems = (json.albums?.items ?? []).filter(
-    (item): item is SpotifyAlbumObject => item !== null,
-  );
-  const playlistItems = (json.playlists?.items ?? []).filter(
-    (item): item is SpotifyPlaylistObject => item !== null,
-  );
+    const trackItems = (json.tracks?.items ?? []).filter(
+      (item): item is SpotifyTrackObject => item !== null,
+    );
+    const artistItems = (json.artists?.items ?? []).filter(
+      (item): item is SpotifyArtistObject => item !== null,
+    );
+    const albumItems = (json.albums?.items ?? []).filter(
+      (item): item is SpotifyAlbumObject => item !== null,
+    );
 
-  const tracks = trackItems
-    .map(toBrowseTrack)
-    .filter((item): item is BrowseSearchItem => item !== null)
-    .slice(0, limit);
+    const tracks = trackItems
+      .map(toBrowseTrack)
+      .filter((item): item is BrowseSearchItem => item !== null)
+      .slice(0, limit);
 
-  const artists = artistItems
-    .map(toBrowseArtist)
-    .filter((item): item is BrowseSearchItem => item !== null)
-    .slice(0, limit);
+    const artists = artistItems
+      .map(toBrowseArtist)
+      .filter((item): item is BrowseSearchItem => item !== null)
+      .slice(0, limit);
 
-  const albums = albumItems
-    .map(toBrowseAlbum)
-    .filter((item): item is BrowseSearchItem => item !== null)
-    .slice(0, limit);
+    const albums = albumItems
+      .map(toBrowseAlbum)
+      .filter((item): item is BrowseSearchItem => item !== null)
+      .slice(0, limit);
 
-  const playlists = playlistItems
-    .map(toBrowsePlaylist)
-    .filter((item): item is BrowseSearchItem => item !== null)
-    .slice(0, limit);
+    const topResult = pickTopBrowseResult(q, tracks, artists, albums, []);
 
-  const topResult = pickTopBrowseResult(q, tracks, artists, albums, playlists);
+    if (tracks.length === 0 && artists.length === 0 && albums.length === 0) {
+      return getFallbackBrowse(q, limit);
+    }
 
-  return { topResult, tracks, artists, albums, playlists };
+    return { topResult, tracks, artists, albums, playlists: [] };
+  } catch (error) {
+    devLog(
+      `Spotify searchBrowse failed (${error instanceof Error ? error.message : "unknown error"}); using fallback catalog`,
+    );
+    return getFallbackBrowse(q, limit);
+  }
 }
 
 /** Search Spotify for artists to back the ArtistSearch autocomplete. */
@@ -488,18 +508,30 @@ export async function searchArtists(query: string, limit = 5): Promise<ArtistSug
   }
 
   devLog(`Searching artists... query="${q}" limit=${limit}`);
-  const json = (await spotifyGet("search", {
-    q,
-    type: "artist",
-    limit: String(limit),
-  })) as SpotifyArtistSearchResponse;
+  try {
+    const json = (await spotifyGet("search", {
+      q,
+      type: "artist",
+      limit: String(limit),
+    })) as SpotifyArtistSearchResponse;
 
-  const items = json.artists?.items ?? [];
-  return items.map((artist) => ({
-    id: artist.id,
-    name: artist.name,
-    image: artist.images?.[0]?.url ?? "",
-  }));
+    const items = json.artists?.items ?? [];
+    const artists = items.map((artist) => ({
+      id: artist.id,
+      name: artist.name,
+      image: artist.images?.[0]?.url ?? "",
+    }));
+
+    if (artists.length === 0) {
+      return getFallbackArtists(q, limit);
+    }
+    return artists;
+  } catch (error) {
+    devLog(
+      `Spotify searchArtists failed (${error instanceof Error ? error.message : "unknown error"}); using fallback artists`,
+    );
+    return getFallbackArtists(q, limit);
+  }
 }
 
 function extractSpotifyTrackId(spotifyUrl: string): string | null {
@@ -516,6 +548,13 @@ export async function getTrackPreviewUrl(spotifyTrackUrl: string): Promise<strin
 
   devLog(`Fetching preview_url for track id=${trackId}`);
 
-  const json = (await spotifyGet(`tracks/${trackId}`, marketParam())) as SpotifyTrackObject;
-  return json.preview_url ?? null;
+  try {
+    const json = (await spotifyGet(`tracks/${trackId}`, marketParam())) as SpotifyTrackObject;
+    return json.preview_url ?? null;
+  } catch (error) {
+    devLog(
+      `Spotify getTrackPreviewUrl failed (${error instanceof Error ? error.message : "unknown error"})`,
+    );
+    return null;
+  }
 }

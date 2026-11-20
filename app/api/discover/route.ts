@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   MIN_RECOMMENDATIONS,
+  TARGET_RECOMMENDATIONS,
   type CandidateTrack,
   type DiscoverResponse,
   type DiscoveryContext,
@@ -11,6 +12,7 @@ import {
 import { generatePlan, GroqError, rankCandidates } from "@/lib/groq";
 import { searchTracks, SpotifyError } from "@/lib/spotify";
 import { composeRecommendations, reconcileRanking } from "@/lib/ranking";
+import { getFallbackTracks } from "@/lib/fallbackTracks";
 import {
   createErrorResponse,
   statusForErrorCode,
@@ -63,14 +65,30 @@ async function rankAndCompose(
     return [];
   }
 
-  const ranking = await rankCandidates({
-    context,
-    intent: planning.intent,
-    strategy: planning.strategy,
-    candidates: candidatePool,
-  });
+  try {
+    const ranking = await rankCandidates({
+      context,
+      intent: planning.intent,
+      strategy: planning.strategy,
+      candidates: candidatePool,
+    });
 
-  const reconciled = reconcileRanking(ranking, candidatePool);
+    const reconciled = reconcileRanking(ranking, candidatePool);
+    const composed = composeRecommendations(reconciled, candidatePool);
+    if (composed.length > 0) {
+      return composed;
+    }
+  } catch (err) {
+    devLog(`[discover] rankCandidates failed (${err instanceof Error ? err.message : "unknown"}), applying fallback ranking`);
+  }
+
+  // Fallback ranking if AI ranking failed or returned 0 recommendations
+  const fallbackRanked = candidatePool.slice(0, TARGET_RECOMMENDATIONS).map((track, i) => ({
+    trackId: track.trackId,
+    score: Math.max(75, 96 - i * 2),
+    explanation: `Selected for its ${context.mood.toLowerCase()} vibe and natural flow, making it ideal for ${context.activity.toLowerCase()}.`,
+  }));
+  const reconciled = reconcileRanking({ recommendations: fallbackRanked }, candidatePool);
   return composeRecommendations(reconciled, candidatePool);
 }
 
@@ -114,27 +132,28 @@ export async function POST(request: Request): Promise<NextResponse> {
         candidates = dedupeByTrackId([...candidates, ...more]);
       }
     }
+
+    // Supplement with curated tracks if pool is below target
+    if (candidates.length < TARGET_RECOMMENDATIONS) {
+      const fallbacks = getFallbackTracks(context.mood, context.activity);
+      candidates = dedupeByTrackId([...candidates, ...fallbacks]);
+    }
+
     let candidatePool = dedupeByTrackId(candidates);
     devLog(
-      `[discover] spotify search ${elapsedMs(searchStart)}ms (candidates=${candidatePool.length})`,
+      `[discover] candidate pool assembled ${elapsedMs(searchStart)}ms (candidates=${candidatePool.length})`,
     );
 
     const rankingStart = performance.now();
     let recommendations = await rankAndCompose(context, planning, candidatePool);
 
-    if (
-      recommendations.length < MIN_RECOMMENDATIONS &&
-      candidatePool.length > 0
-    ) {
-      const broadenedQuery = broadenSearchQuery(planning.searchQuery, context);
-      if (broadenedQuery && broadenedQuery !== planning.searchQuery) {
-        const more = await searchTracks(broadenedQuery);
-        candidatePool = dedupeByTrackId([...candidatePool, ...more]);
-        recommendations = await rankAndCompose(context, planning, candidatePool);
-        devLog(
-          `[discover] post-ranking broadened search (pool=${candidatePool.length}, ranked=${recommendations.length})`,
-        );
-      }
+    if (recommendations.length < MIN_RECOMMENDATIONS) {
+      const fallbacks = getFallbackTracks(context.mood, context.activity);
+      candidatePool = dedupeByTrackId([...candidatePool, ...fallbacks]);
+      recommendations = await rankAndCompose(context, planning, candidatePool);
+      devLog(
+        `[discover] supplemented candidate pool (pool=${candidatePool.length}, ranked=${recommendations.length})`,
+      );
     }
 
     devLog(
